@@ -136,6 +136,13 @@ export interface Alternative {
   rejection_reasons: string[];
 }
 
+export interface AIAnalysis {
+  vehicle_reason: string;
+  route_reason: string;
+  strengths: string[];
+  cautions: string[];
+}
+
 export interface RecommendationRun {
   id: number;
   job_id: number;
@@ -144,7 +151,34 @@ export interface RecommendationRun {
   created_at: string;
   alternatives: Alternative[];
   explanations: string[];
+  ai_analysis: AIAnalysis | null;
   approval: { selected_alternative_id: number; approved_by: number; approved_at: string; reason: string | null } | null;
+}
+
+export interface AIInsightVehicle {
+  vehicle_id: number;
+  vehicle_code: string;
+  override_count: number;
+}
+
+export interface AIInsightRoute {
+  route_id: number;
+  route_code: string;
+  change_count: number;
+}
+
+export interface AIInsightTrendPoint {
+  period: string;
+  match_rate_pct: number;
+  total_decisions: number;
+}
+
+export interface AIInsights {
+  total_decisions: number;
+  match_rate_pct: number;
+  most_overridden_vehicle: AIInsightVehicle | null;
+  most_changed_route: AIInsightRoute | null;
+  trend: AIInsightTrendPoint[];
 }
 
 export interface DashboardSummary {
@@ -462,4 +496,14 @@ export const reportsApi = {
     downloadCsv(`/api/tdss/organizations/${orgId}/reports/decision-profiles.csv`, range ?? {}, 'decision_profiles.csv'),
   recommendation: (orgId: number, runId: number) =>
     downloadCsv(`/api/tdss/organizations/${orgId}/reports/recommendations/${runId}.csv`, {}, `recommendation_${runId}.csv`),
+};
+
+// ---------------------------------------------------------------------------
+// AI Insights
+// ---------------------------------------------------------------------------
+export const aiApi = {
+  orgInsights: (orgId: number) => api.get<AIInsights>(`/api/tdss/organizations/${orgId}/ai-insights`).then((r) => r.data),
+  ownerInsights: () => api.get<AIInsights>('/api/tdss/owner/ai-insights').then((r) => r.data),
+  exportDataset: (orgId: number) =>
+    downloadCsv(`/api/tdss/organizations/${orgId}/ai-insights/dataset.csv`, {}, 'ai_decision_dataset.csv'),
 };

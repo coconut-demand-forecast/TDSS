@@ -25,6 +25,8 @@ import OwnerSystemHealthPage from './features/tdss/owner/OwnerSystemHealthPage';
 import OwnerUsagePage from './features/tdss/owner/OwnerUsagePage';
 import SystemSettingsPage from './features/tdss/owner/SystemSettingsPage';
 import OwnerProfilePage from './features/tdss/owner/OwnerProfilePage';
+import AIInsightsPage from './features/tdss/aiInsights/AIInsightsPage';
+import OwnerAIInsightsPage from './features/tdss/owner/OwnerAIInsightsPage';
 
 function LoginRoute() {
   const { user } = useAuth();
@@ -57,6 +59,7 @@ export default function App() {
             <Route path="/tdss/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
             <Route path="/tdss/decision-profiles" element={<ProtectedRoute><DecisionProfilesPage /></ProtectedRoute>} />
             <Route path="/tdss/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
+            <Route path="/tdss/ai-insights" element={<ProtectedRoute><AIInsightsPage /></ProtectedRoute>} />
             <Route path="/tdss/users" element={<AdminRoute><OrgUsersPage /></AdminRoute>} />
             <Route path="/tdss/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/tdss/org-info" element={<ProtectedRoute><OrgInfoPage /></ProtectedRoute>} />
@@ -68,6 +71,7 @@ export default function App() {
             <Route path="/tdss/owner/users" element={<OwnerRoute><OwnerUsersPage /></OwnerRoute>} />
             <Route path="/tdss/owner/usage" element={<OwnerRoute><OwnerUsagePage /></OwnerRoute>} />
             <Route path="/tdss/owner/audit-logs" element={<OwnerRoute><OwnerAuditLogsPage /></OwnerRoute>} />
+            <Route path="/tdss/owner/ai-insights" element={<OwnerRoute><OwnerAIInsightsPage /></OwnerRoute>} />
             <Route path="/tdss/owner/system-health" element={<OwnerRoute><OwnerSystemHealthPage /></OwnerRoute>} />
             <Route path="/tdss/owner/system-settings" element={<OwnerRoute><SystemSettingsPage /></OwnerRoute>} />
             <Route path="/tdss/owner/profile" element={<OwnerRoute><OwnerProfilePage /></OwnerRoute>} />

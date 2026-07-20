@@ -5,6 +5,7 @@ from app.config import settings
 from app.database import Base, engine
 from app.tdss import models as tdss_models  # noqa: F401 — registers tables on Base
 from app.tdss.routers import (
+    ai_insights_router,
     audit_router,
     auth_router,
     dashboard_router,
@@ -47,6 +48,7 @@ app.include_router(audit_router.owner_audit_router)
 app.include_router(owner_router.router)
 app.include_router(notifications_router.router)
 app.include_router(system_settings_router.router)
+app.include_router(ai_insights_router.router)
 
 
 @app.get("/api/health")

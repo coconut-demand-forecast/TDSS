@@ -351,6 +351,13 @@ class ApprovalOut(BaseModel):
     reason: str | None
 
 
+class AIAnalysisOut(BaseModel):
+    vehicle_reason: str
+    route_reason: str
+    strengths: list[str]
+    cautions: list[str]
+
+
 class RecommendationRunOut(BaseModel):
     id: int
     job_id: int
@@ -359,6 +366,7 @@ class RecommendationRunOut(BaseModel):
     created_at: dt.datetime
     alternatives: list[AlternativeOut]
     explanations: list[str] = []
+    ai_analysis: AIAnalysisOut | None = None
     approval: ApprovalOut | None = None
 
 
@@ -450,3 +458,32 @@ class OrganizationUsageRow(BaseModel):
     vehicle_count: int
     route_count: int
     report_export_count: int
+
+
+# ---------------------------------------------------------------------------
+# AI Insights
+# ---------------------------------------------------------------------------
+class AIInsightVehicleOut(BaseModel):
+    vehicle_id: int
+    vehicle_code: str
+    override_count: int
+
+
+class AIInsightRouteOut(BaseModel):
+    route_id: int
+    route_code: str
+    change_count: int
+
+
+class AIInsightTrendPoint(BaseModel):
+    period: str
+    match_rate_pct: float
+    total_decisions: int
+
+
+class AIInsightsOut(BaseModel):
+    total_decisions: int
+    match_rate_pct: float
+    most_overridden_vehicle: AIInsightVehicleOut | None
+    most_changed_route: AIInsightRouteOut | None
+    trend: list[AIInsightTrendPoint]

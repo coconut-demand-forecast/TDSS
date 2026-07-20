@@ -276,6 +276,44 @@ class Notification(Base):
     created_at = Column(DateTime, default=dt.datetime.utcnow, index=True)
 
 
+class AIDecisionEvent(Base):
+    """Additive, append-only log of every approval decision — the training
+    dataset for the AI Learning module. Populated once per approval from
+    select_alternative(); never mutates any existing table. `is_override`
+    is the label used for the (future) Random Forest classifier: whether
+    the planner followed the AHP top-ranked alternative or picked another."""
+
+    __tablename__ = "tdss_ai_decision_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    run_id = Column(Integer, ForeignKey("tdss_recommendation_runs.id"), nullable=False, index=True)
+    job_id = Column(Integer, ForeignKey("tdss_transport_jobs.id"), nullable=False, index=True)
+    organization_id = Column(Integer, ForeignKey("tdss_organizations.id"), nullable=False, index=True)
+    decision_profile_id = Column(Integer, ForeignKey("tdss_decision_profiles.id"), nullable=True)
+
+    top_alternative_id = Column(Integer, ForeignKey("tdss_recommendation_alternatives.id"), nullable=True)
+    top_vehicle_id = Column(Integer, ForeignKey("tdss_vehicles.id"), nullable=True)
+    top_route_id = Column(Integer, ForeignKey("tdss_routes.id"), nullable=True)
+    top_total_score = Column(Float, nullable=True)
+
+    selected_alternative_id = Column(Integer, ForeignKey("tdss_recommendation_alternatives.id"), nullable=False)
+    selected_vehicle_id = Column(Integer, ForeignKey("tdss_vehicles.id"), nullable=False)
+    selected_route_id = Column(Integer, ForeignKey("tdss_routes.id"), nullable=False)
+    selected_total_score = Column(Float, nullable=False)
+    selected_rank = Column(Integer, nullable=True)
+
+    is_override = Column(Boolean, nullable=False, default=False)
+    vehicle_changed = Column(Boolean, nullable=False, default=False)
+    route_changed = Column(Boolean, nullable=False, default=False)
+
+    criteria_weights = Column(JSON, nullable=True)  # snapshot — ML feature source
+    selected_raw_values = Column(JSON, nullable=True)  # snapshot — ML feature source
+    reason = Column(Text, nullable=True)
+
+    decided_by = Column(Integer, ForeignKey("tdss_users.id"), nullable=True)
+    created_at = Column(DateTime, default=dt.datetime.utcnow, index=True)
+
+
 class SystemSettings(Base):
     """Singleton row (id is always 1) for the few system-wide settings that
     actually affect the running application: the display name shown in the

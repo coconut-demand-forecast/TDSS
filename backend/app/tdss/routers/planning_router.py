@@ -14,6 +14,8 @@ from app.tdss.models import (
     TransportJob,
     Vehicle,
 )
+from app.tdss.ai.decision_logger import log_decision_event
+from app.tdss.ai.explainer import generate_ai_analysis
 from app.tdss.routers.notifications_router import notify_organization
 from app.tdss.schemas import GenerateRecommendationRequest, RecommendationRunOut, SelectAlternativeRequest
 from app.tdss.services.recommendation_service import build_explanations, generate_recommendation
@@ -56,6 +58,12 @@ def _run_out(db: Session, run: RecommendationRun) -> dict:
     top = next((a for a in run.alternatives if a.rank == 1), None)
     feasible_alts = [a for a in run.alternatives if a.feasible]
     explanations = build_explanations(top, feasible_alts) if top else []
+    top_out = next((a for a in alt_out if a["id"] == top.id), None) if top else None
+    ai_analysis = (
+        generate_ai_analysis(top, feasible_alts, run.criteria_weights, top_out["vehicle_code"], top_out["route_code"])
+        if top and top_out
+        else None
+    )
 
     approval = None
     if run.approval:
@@ -74,6 +82,7 @@ def _run_out(db: Session, run: RecommendationRun) -> dict:
         "created_at": run.created_at,
         "alternatives": alt_out,
         "explanations": explanations,
+        "ai_analysis": ai_analysis,
         "approval": approval,
     }
 
@@ -178,6 +187,7 @@ def select_alternative(
         reason=data.reason,
     )
     db.add(approval)
+    log_decision_event(db, run=run, selected=alt, user=user, reason=data.reason)
 
     job = db.query(TransportJob).filter(TransportJob.id == run.job_id).first()
     if job:

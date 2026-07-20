@@ -4,7 +4,7 @@
 
 ## โครงสร้างโปรเจกต์
 
-- `backend/` — FastAPI + SQLAlchemy + JWT auth, โค้ด TDSS ทั้งหมดอยู่ใต้ `backend/app/tdss/`
+- `backend/` — FastAPI + SQLAlchemy + JWT auth, โค้ด TDSS ทั้งหมดอยู่ใต้ `backend/app/tdss/` (AI Module อยู่ใต้ `backend/app/tdss/ai/` — ดู [docs/AI_MODULE.md](docs/AI_MODULE.md))
 - `frontend/` — React + TypeScript + Vite, ธีม TDSS (sidebar เข้ม `#171717`, accent แดง `#D71920`)
 
 ## รันโปรเจกต์บนเครื่อง (local)

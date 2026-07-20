@@ -133,6 +133,40 @@ export default function RecommendationResultPage() {
             </div>
           )}
 
+          {run.ai_analysis && (
+            <div style={{ background: '#fdf4ff', border: '1px solid #f3d9ff', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, fontSize: 12.5, marginBottom: 10, color: '#7e22ce' }}>🤖 การวิเคราะห์โดย AI</div>
+              <div style={{ fontSize: 12.5, marginBottom: 8 }}>
+                <strong>ทำไมเลือกรถคันนี้: </strong>
+                <span style={{ color: 'var(--c-text-muted)' }}>{run.ai_analysis.vehicle_reason}</span>
+              </div>
+              <div style={{ fontSize: 12.5, marginBottom: 10 }}>
+                <strong>ทำไมเลือกเส้นทางนี้: </strong>
+                <span style={{ color: 'var(--c-text-muted)' }}>{run.ai_analysis.route_reason}</span>
+              </div>
+              {run.ai_analysis.strengths.length > 0 && (
+                <div style={{ marginBottom: run.ai_analysis.cautions.length > 0 ? 10 : 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>จุดเด่นของทางเลือกนี้</div>
+                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: 'var(--c-text-muted)', lineHeight: 1.7 }}>
+                    {run.ai_analysis.strengths.map((s, i) => (
+                      <li key={i}>{s}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {run.ai_analysis.cautions.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4, color: 'var(--c-accent)' }}>ข้อควรระวัง</div>
+                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: 'var(--c-accent)', lineHeight: 1.7 }}>
+                    {run.ai_analysis.cautions.map((c, i) => (
+                      <li key={i}>{c}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
           {canApprove && !run.approval && (
             <Button onClick={() => openSelect(top)}>ยอมรับคำแนะนำนี้</Button>
           )}
