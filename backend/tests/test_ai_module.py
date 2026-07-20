@@ -74,11 +74,11 @@ def test_decision_event_logged_and_insights_reflect_override(client):
     assert insights["match_rate_pct"] == 0.0  # the one decision was an override
     assert insights["most_overridden_vehicle"]["vehicle_code"] == top["vehicle_code"]
 
-    # Dataset CSV export (org_admin only) should include the event.
-    res = client.get(f"/api/tdss/organizations/{org_id}/ai-insights/dataset.csv", headers=headers)
+    # Dataset PDF export (org_admin only) should succeed and be a real PDF.
+    res = client.get(f"/api/tdss/organizations/{org_id}/ai-insights/dataset.pdf", headers=headers)
     assert res.status_code == 200
-    assert "is_override" in res.text
-    assert "True" in res.text
+    assert res.headers["content-type"] == "application/pdf"
+    assert res.content.startswith(b"%PDF-")
 
 
 def test_match_rate_100_pct_when_top_pick_always_followed(client):

@@ -48,7 +48,7 @@ export default function AIInsightsPage() {
         actions={
           canExport ? (
             <Button variant="secondary" onClick={() => currentOrgId && aiApi.exportDataset(currentOrgId)}>
-              ส่งออก Dataset (CSV)
+              ส่งออก Dataset (PDF)
             </Button>
           ) : undefined
         }

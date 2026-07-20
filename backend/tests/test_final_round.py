@@ -121,7 +121,7 @@ def test_owner_usage_reflects_real_activity(client, db_session):
     org_id = data["user"]["memberships"][0]["organization_id"]
     _make_vehicle(client, headers, org_id)
     _make_job(client, headers, org_id)
-    client.get(f"/api/tdss/organizations/{org_id}/reports/jobs.csv", headers=headers)
+    client.get(f"/api/tdss/organizations/{org_id}/reports/jobs.pdf", headers=headers)
 
     owner = User(name="Usage Owner", email="usageowner@test.com", password_hash=hash_password("password123"), is_system_owner=True)
     db_session.add(owner)

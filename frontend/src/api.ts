@@ -467,9 +467,9 @@ export const ownerApi = {
 };
 
 // ---------------------------------------------------------------------------
-// Reports (CSV downloads)
+// Reports (PDF downloads)
 // ---------------------------------------------------------------------------
-async function downloadCsv(url: string, params: object, fallbackFilename: string) {
+async function downloadFile(url: string, params: object, fallbackFilename: string) {
   const res = await api.get(url, { params, responseType: 'blob' });
   const disposition = res.headers['content-disposition'] as string | undefined;
   const match = disposition?.match(/filename="?([^";]+)"?/);
@@ -486,16 +486,16 @@ async function downloadCsv(url: string, params: object, fallbackFilename: string
 
 export const reportsApi = {
   jobs: (orgId: number, range?: DateRangeParams & { status?: string }) =>
-    downloadCsv(`/api/tdss/organizations/${orgId}/reports/jobs.csv`, range ?? {}, 'jobs_report.csv'),
+    downloadFile(`/api/tdss/organizations/${orgId}/reports/jobs.pdf`, range ?? {}, 'jobs_report.pdf'),
   vehicleUtilization: (orgId: number, range?: DateRangeParams) =>
-    downloadCsv(`/api/tdss/organizations/${orgId}/reports/vehicle-utilization.csv`, range ?? {}, 'vehicle_utilization.csv'),
+    downloadFile(`/api/tdss/organizations/${orgId}/reports/vehicle-utilization.pdf`, range ?? {}, 'vehicle_utilization.pdf'),
   costComparison: (orgId: number, range?: DateRangeParams) =>
-    downloadCsv(`/api/tdss/organizations/${orgId}/reports/cost-comparison.csv`, range ?? {}, 'cost_comparison.csv'),
-  co2: (orgId: number, range?: DateRangeParams) => downloadCsv(`/api/tdss/organizations/${orgId}/reports/co2.csv`, range ?? {}, 'co2_report.csv'),
+    downloadFile(`/api/tdss/organizations/${orgId}/reports/cost-comparison.pdf`, range ?? {}, 'cost_comparison.pdf'),
+  co2: (orgId: number, range?: DateRangeParams) => downloadFile(`/api/tdss/organizations/${orgId}/reports/co2.pdf`, range ?? {}, 'co2_report.pdf'),
   decisionProfiles: (orgId: number, range?: DateRangeParams) =>
-    downloadCsv(`/api/tdss/organizations/${orgId}/reports/decision-profiles.csv`, range ?? {}, 'decision_profiles.csv'),
+    downloadFile(`/api/tdss/organizations/${orgId}/reports/decision-profiles.pdf`, range ?? {}, 'decision_profiles.pdf'),
   recommendation: (orgId: number, runId: number) =>
-    downloadCsv(`/api/tdss/organizations/${orgId}/reports/recommendations/${runId}.csv`, {}, `recommendation_${runId}.csv`),
+    downloadFile(`/api/tdss/organizations/${orgId}/reports/recommendations/${runId}.pdf`, {}, `recommendation_${runId}.pdf`),
 };
 
 // ---------------------------------------------------------------------------
@@ -505,5 +505,5 @@ export const aiApi = {
   orgInsights: (orgId: number) => api.get<AIInsights>(`/api/tdss/organizations/${orgId}/ai-insights`).then((r) => r.data),
   ownerInsights: () => api.get<AIInsights>('/api/tdss/owner/ai-insights').then((r) => r.data),
   exportDataset: (orgId: number) =>
-    downloadCsv(`/api/tdss/organizations/${orgId}/ai-insights/dataset.csv`, {}, 'ai_decision_dataset.csv'),
+    downloadFile(`/api/tdss/organizations/${orgId}/ai-insights/dataset.pdf`, {}, 'ai_decision_dataset.pdf'),
 };

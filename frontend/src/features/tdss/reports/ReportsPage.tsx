@@ -32,7 +32,7 @@ export default function ReportsPage() {
     <OrgWorkspaceLayout title="รายงาน">
       <PageHeader
         title="รายงาน"
-        subtitle={`ส่งออกรายงานเป็นไฟล์ CSV — ช่วงเวลา: ${range.label} (มีผลกับทั้งตารางและไฟล์ที่ดาวน์โหลด)`}
+        subtitle={`ส่งออกรายงานเป็นไฟล์ PDF — ช่วงเวลา: ${range.label} (มีผลกับทั้งตารางและไฟล์ที่ดาวน์โหลด)`}
         actions={<DateRangePicker onChange={setRange} />}
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
@@ -41,7 +41,7 @@ export default function ReportsPage() {
             <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 6 }}>{r.label}</div>
             <div style={{ fontSize: 12, color: 'var(--c-text-muted)', marginBottom: 14 }}>{r.desc}</div>
             <Button size="sm" variant="secondary" onClick={() => download(r.key)}>
-              ดาวน์โหลด CSV
+              ดาวน์โหลด PDF
             </Button>
           </Card>
         ))}

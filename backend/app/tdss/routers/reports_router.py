@@ -1,9 +1,6 @@
-import csv
 import datetime as dt
-import io
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -18,28 +15,13 @@ from app.tdss.models import (
     TransportJob,
     Vehicle,
 )
+from app.tdss.pdf_utils import pdf_response
 
 router = APIRouter(
     prefix="/api/tdss/organizations/{organization_id}/reports",
     tags=["tdss-reports"],
     dependencies=[Depends(require_feature("reports"))],
 )
-
-
-def _csv_response(rows: list[dict], filename: str) -> StreamingResponse:
-    buf = io.StringIO()
-    if rows:
-        writer = csv.DictWriter(buf, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
-    else:
-        buf.write("")
-    buf.seek(0)
-    return StreamingResponse(
-        iter([buf.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
 
 
 def _log_export(db: Session, organization_id: int, user_id: int, report: str) -> None:
@@ -60,7 +42,7 @@ def _feasible_alts_in_range(db: Session, organization_id: int, date_from: dt.dat
     return q.all()
 
 
-@router.get("/jobs.csv")
+@router.get("/jobs.pdf")
 def jobs_report(
     organization_id: int,
     status_filter: str | None = Query(default=None, alias="status"),
@@ -81,24 +63,24 @@ def jobs_report(
 
     rows = [
         {
-            "job_number": j.job_number,
-            "customer_name": j.customer_name,
-            "origin": j.origin,
-            "destination": j.destination,
-            "shipment_weight_kg": j.shipment_weight_kg,
-            "shipment_volume_m3": j.shipment_volume_m3,
-            "priority": j.priority,
-            "status": j.status,
-            "required_delivery_datetime": j.required_delivery_datetime,
-            "created_at": j.created_at,
+            "เลขที่งาน": j.job_number,
+            "ลูกค้า": j.customer_name,
+            "ต้นทาง": j.origin,
+            "ปลายทาง": j.destination,
+            "น้ำหนัก (กก.)": j.shipment_weight_kg,
+            "ปริมาตร (ลบ.ม.)": j.shipment_volume_m3,
+            "ความสำคัญ": j.priority,
+            "สถานะ": j.status,
+            "กำหนดส่งมอบ": j.required_delivery_datetime,
+            "สร้างเมื่อ": j.created_at,
         }
         for j in jobs
     ]
     _log_export(db, organization_id, user.id, "jobs")
-    return _csv_response(rows, "transport_jobs_report.csv")
+    return pdf_response(rows, title="รายงานงานขนส่ง", subtitle=None, filename="transport_jobs_report.pdf")
 
 
-@router.get("/vehicle-utilization.csv")
+@router.get("/vehicle-utilization.pdf")
 def vehicle_utilization_report(
     organization_id: int,
     date_from: dt.datetime | None = Query(default=None),
@@ -113,19 +95,19 @@ def vehicle_utilization_report(
         vehicle = db.query(Vehicle).filter(Vehicle.id == a.vehicle_id).first()
         rows.append(
             {
-                "vehicle_code": vehicle.vehicle_code if vehicle else a.vehicle_id,
-                "run_id": a.run_id,
-                "weight_utilization_pct": round(a.weight_utilization * 100, 1),
-                "volume_utilization_pct": round(a.volume_utilization * 100, 1),
-                "rank": a.rank,
-                "selected": a.id in [ap.selected_alternative_id for ap in db.query(RecommendationApproval).filter(RecommendationApproval.run_id == a.run_id)],
+                "ยานพาหนะ": vehicle.vehicle_code if vehicle else a.vehicle_id,
+                "รหัสคำแนะนำ": a.run_id,
+                "ใช้ความจุน้ำหนัก (%)": round(a.weight_utilization * 100, 1),
+                "ใช้ความจุปริมาตร (%)": round(a.volume_utilization * 100, 1),
+                "อันดับ": a.rank,
+                "ถูกเลือก": a.id in [ap.selected_alternative_id for ap in db.query(RecommendationApproval).filter(RecommendationApproval.run_id == a.run_id)],
             }
         )
     _log_export(db, organization_id, user.id, "vehicle_utilization")
-    return _csv_response(rows, "vehicle_utilization_report.csv")
+    return pdf_response(rows, title="รายงานการใช้ยานพาหนะ", subtitle=None, filename="vehicle_utilization_report.pdf")
 
 
-@router.get("/cost-comparison.csv")
+@router.get("/cost-comparison.pdf")
 def cost_comparison_report(
     organization_id: int,
     date_from: dt.datetime | None = Query(default=None),
@@ -141,18 +123,18 @@ def cost_comparison_report(
         route = db.query(Route).filter(Route.id == a.route_id).first()
         rows.append(
             {
-                "run_id": a.run_id,
-                "vehicle_code": vehicle.vehicle_code if vehicle else a.vehicle_id,
-                "route_code": route.route_code if route else a.route_id,
-                "cost": a.cost,
-                "rank": a.rank,
+                "รหัสคำแนะนำ": a.run_id,
+                "ยานพาหนะ": vehicle.vehicle_code if vehicle else a.vehicle_id,
+                "เส้นทาง": route.route_code if route else a.route_id,
+                "ต้นทุน (บาท)": a.cost,
+                "อันดับ": a.rank,
             }
         )
     _log_export(db, organization_id, user.id, "cost_comparison")
-    return _csv_response(rows, "cost_comparison_report.csv")
+    return pdf_response(rows, title="รายงานเปรียบเทียบต้นทุน", subtitle=None, filename="cost_comparison_report.pdf")
 
 
-@router.get("/co2.csv")
+@router.get("/co2.pdf")
 def co2_report(
     organization_id: int,
     date_from: dt.datetime | None = Query(default=None),
@@ -165,12 +147,19 @@ def co2_report(
     rows = []
     for a in alts:
         vehicle = db.query(Vehicle).filter(Vehicle.id == a.vehicle_id).first()
-        rows.append({"run_id": a.run_id, "vehicle_code": vehicle.vehicle_code if vehicle else a.vehicle_id, "co2_estimate_kg": a.co2_estimate, "rank": a.rank})
+        rows.append(
+            {
+                "รหัสคำแนะนำ": a.run_id,
+                "ยานพาหนะ": vehicle.vehicle_code if vehicle else a.vehicle_id,
+                "CO2 โดยประมาณ (กก.)": a.co2_estimate,
+                "อันดับ": a.rank,
+            }
+        )
     _log_export(db, organization_id, user.id, "co2")
-    return _csv_response(rows, "co2_report.csv")
+    return pdf_response(rows, title="รายงานการปล่อย CO2", subtitle=None, filename="co2_report.pdf")
 
 
-@router.get("/decision-profiles.csv")
+@router.get("/decision-profiles.pdf")
 def decision_profile_report(
     organization_id: int,
     date_from: dt.datetime | None = Query(default=None),
@@ -187,22 +176,22 @@ def decision_profile_report(
     profiles = q.all()
     rows = [
         {
-            "name": p.name,
-            "status": p.status,
-            "weights": p.weights,
-            "lambda_max": p.lambda_max,
-            "ci": p.ci,
-            "cr": p.cr,
-            "is_consistent": p.is_consistent,
-            "created_at": p.created_at,
+            "ชื่อโปรไฟล์": p.name,
+            "สถานะ": p.status,
+            "น้ำหนักเกณฑ์": p.weights,
+            "Lambda max": p.lambda_max,
+            "CI": p.ci,
+            "CR": p.cr,
+            "ผ่านเกณฑ์ความสอดคล้อง": p.is_consistent,
+            "สร้างเมื่อ": p.created_at,
         }
         for p in profiles
     ]
     _log_export(db, organization_id, user.id, "decision_profiles")
-    return _csv_response(rows, "decision_profiles_report.csv")
+    return pdf_response(rows, title="รายงานโปรไฟล์การตัดสินใจ (AHP)", subtitle=None, filename="decision_profiles_report.pdf")
 
 
-@router.get("/recommendations/{run_id}.csv")
+@router.get("/recommendations/{run_id}.pdf")
 def recommendation_report(organization_id: int, run_id: int, db: Session = Depends(get_db), ctx=Depends(org_member)):
     user, _ = ctx
     run = db.query(RecommendationRun).filter(RecommendationRun.id == run_id, RecommendationRun.organization_id == organization_id).first()
@@ -216,17 +205,17 @@ def recommendation_report(organization_id: int, run_id: int, db: Session = Depen
         route = db.query(Route).filter(Route.id == a.route_id).first()
         rows.append(
             {
-                "rank": a.rank,
-                "vehicle_code": vehicle.vehicle_code if vehicle else a.vehicle_id,
-                "route_code": route.route_code if route else a.route_id,
-                "cost": a.cost,
-                "duration_minutes": a.duration_minutes,
-                "co2_estimate": a.co2_estimate,
-                "total_score": a.total_score,
-                "feasible": a.feasible,
-                "selected": approval is not None and approval.selected_alternative_id == a.id,
-                "approval_reason": approval.reason if approval and approval.selected_alternative_id == a.id else "",
+                "อันดับ": a.rank,
+                "ยานพาหนะ": vehicle.vehicle_code if vehicle else a.vehicle_id,
+                "เส้นทาง": route.route_code if route else a.route_id,
+                "ต้นทุน (บาท)": a.cost,
+                "เวลา (นาที)": a.duration_minutes,
+                "CO2 (กก.)": a.co2_estimate,
+                "คะแนนรวม": a.total_score,
+                "เป็นไปได้": a.feasible,
+                "ถูกเลือก": approval is not None and approval.selected_alternative_id == a.id,
+                "เหตุผลการอนุมัติ": approval.reason if approval and approval.selected_alternative_id == a.id else "",
             }
         )
     _log_export(db, organization_id, user.id, "recommendation")
-    return _csv_response(rows, f"recommendation_report_run{run_id}.csv")
+    return pdf_response(rows, title="รายงานผลการแนะนำ", subtitle=f"คำแนะนำจากงาน #{run.job_id}", filename=f"recommendation_report_run{run_id}.pdf")

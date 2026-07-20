@@ -89,7 +89,7 @@ export default function RecommendationResultPage() {
         subtitle={`คำแนะนำจากงาน #${run.job_id} · สร้างเมื่อ ${new Date(run.created_at).toLocaleString('th-TH')}`}
         actions={
           <Button variant="secondary" onClick={() => reportsApi.recommendation(currentOrgId!, run.id)}>
-            ส่งออกรายงาน (CSV)
+            ส่งออกรายงาน (PDF)
           </Button>
         }
       />
