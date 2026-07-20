@@ -1,0 +1,35 @@
+#root {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+
+.brand-mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--c-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+p {
+  margin: 0;
+  color: var(--c-text-muted);
+  font-size: 14px;
+}
