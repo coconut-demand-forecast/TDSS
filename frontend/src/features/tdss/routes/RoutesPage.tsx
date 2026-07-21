@@ -4,8 +4,10 @@ import { Button, Card, Dialog, EmptyState, Field, Input, LoadingState, PageHeade
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { organizationsApi, routesApi, type Route } from '../../../api';
+import GoogleMapsRoutePicker, { type RouteComputationResult } from './GoogleMapsRoutePicker';
+import { isGoogleMapsConfigured } from './googleMapsClient';
 
-const GOOGLE_MAPS_AVAILABLE = false; // no API key configured in this environment — manual mode only
+const GOOGLE_MAPS_AVAILABLE = isGoogleMapsConfigured();
 
 const EMPTY_FORM = {
   route_code: '',
@@ -30,6 +32,7 @@ export default function RoutesPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [defaultMode, setDefaultMode] = useState('manual');
+  const [formMode, setFormMode] = useState('manual');
 
   const membership = user?.memberships.find((m) => m.organization_id === currentOrgId);
   const canWrite = user?.is_system_owner || membership?.role === 'org_admin' || membership?.role === 'planner';
@@ -59,6 +62,7 @@ export default function RoutesPage() {
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setFormMode(defaultMode);
     setShowForm(true);
   };
 
@@ -75,7 +79,18 @@ export default function RoutesPage() {
       route_risk_level: r.route_risk_level,
       road_restrictions: r.road_restrictions ?? '',
     });
+    setFormMode(r.mode);
     setShowForm(true);
+  };
+
+  const applyRouteComputation = (result: RouteComputationResult) => {
+    setForm((prev) => ({
+      ...prev,
+      origin: result.origin,
+      destination: result.destination,
+      distance_km: String(result.distance_km),
+      estimated_duration_minutes: String(result.estimated_duration_minutes),
+    }));
   };
 
   const submit = async () => {
@@ -96,7 +111,7 @@ export default function RoutesPage() {
         toll_cost: Number(form.toll_cost || 0),
         route_risk_level: form.route_risk_level,
         road_restrictions: form.road_restrictions || undefined,
-        mode: editing?.mode ?? defaultMode,
+        mode: formMode,
       };
       if (editing) {
         await routesApi.update(currentOrgId, editing.id, payload);
@@ -131,7 +146,7 @@ export default function RoutesPage() {
     <OrgWorkspaceLayout title="เส้นทาง">
       <PageHeader
         title="เส้นทาง"
-        subtitle="จัดการเส้นทางขนส่ง (โหมด Manual — ยังไม่ได้เชื่อมต่อ Google Maps API)"
+        subtitle={GOOGLE_MAPS_AVAILABLE ? 'จัดการเส้นทางขนส่ง (เชื่อมต่อ Google Maps แล้ว)' : 'จัดการเส้นทางขนส่ง (โหมด Manual — ยังไม่ได้เชื่อมต่อ Google Maps API)'}
         actions={
           <>
             <Input placeholder="ค้นหา..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load()} style={{ width: 200 }} />
@@ -201,26 +216,49 @@ export default function RoutesPage() {
       )}
 
       {showForm && (
-        <Dialog title={editing ? 'แก้ไขเส้นทาง' : 'เพิ่มเส้นทาง'} onClose={() => setShowForm(false)}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <Dialog title={editing ? 'แก้ไขเส้นทาง' : 'เพิ่มเส้นทาง'} onClose={() => setShowForm(false)} width={formMode === 'google_maps' ? 640 : undefined}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: formMode === 'google_maps' ? 14 : 0 }}>
             <Field label="รหัสเส้นทาง" required>
               <Input value={form.route_code} onChange={(e) => setForm({ ...form, route_code: e.target.value })} />
             </Field>
             <Field label="ชื่อเส้นทาง" required>
               <Input value={form.route_name} onChange={(e) => setForm({ ...form, route_name: e.target.value })} />
             </Field>
-            <Field label="ต้นทาง" required>
-              <Input value={form.origin} onChange={(e) => setForm({ ...form, origin: e.target.value })} />
-            </Field>
-            <Field label="ปลายทาง" required>
-              <Input value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} />
-            </Field>
-            <Field label="ระยะทาง (กม.)" required>
-              <Input type="number" value={form.distance_km} onChange={(e) => setForm({ ...form, distance_km: e.target.value })} />
-            </Field>
-            <Field label="เวลาโดยประมาณ (นาที)" required>
-              <Input type="number" value={form.estimated_duration_minutes} onChange={(e) => setForm({ ...form, estimated_duration_minutes: e.target.value })} />
-            </Field>
+          </div>
+
+          {GOOGLE_MAPS_AVAILABLE && !editing && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <Button size="sm" variant={formMode === 'manual' ? 'primary' : 'secondary'} onClick={() => setFormMode('manual')}>
+                กรอกเอง (Manual)
+              </Button>
+              <Button size="sm" variant={formMode === 'google_maps' ? 'primary' : 'secondary'} onClick={() => setFormMode('google_maps')}>
+                ค้นหาจาก Google Maps
+              </Button>
+            </div>
+          )}
+
+          {formMode === 'google_maps' ? (
+            <div style={{ marginBottom: 14 }}>
+              <GoogleMapsRoutePicker initialOrigin={form.origin} initialDestination={form.destination} onResult={applyRouteComputation} />
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+              <Field label="ต้นทาง" required>
+                <Input value={form.origin} onChange={(e) => setForm({ ...form, origin: e.target.value })} />
+              </Field>
+              <Field label="ปลายทาง" required>
+                <Input value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} />
+              </Field>
+              <Field label="ระยะทาง (กม.)" required>
+                <Input type="number" value={form.distance_km} onChange={(e) => setForm({ ...form, distance_km: e.target.value })} />
+              </Field>
+              <Field label="เวลาโดยประมาณ (นาที)" required>
+                <Input type="number" value={form.estimated_duration_minutes} onChange={(e) => setForm({ ...form, estimated_duration_minutes: e.target.value })} />
+              </Field>
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <Field label="ค่าทางด่วน (บาท)">
               <Input type="number" value={form.toll_cost} onChange={(e) => setForm({ ...form, toll_cost: e.target.value })} />
             </Field>

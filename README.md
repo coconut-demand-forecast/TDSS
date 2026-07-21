@@ -67,6 +67,24 @@ pytest -q
 
 หลัง deploy ทั้งสองฝั่งแล้ว อย่าลืมกลับไปอัปเดต `CORS_ORIGINS` บน Render ให้ตรงกับโดเมน Vercel จริง แล้ว redeploy backend อีกครั้ง
 
+## Google Maps (ทางเลือกเสริม)
+
+หน้า "เส้นทาง" รองรับดึงระยะทาง/เวลาเดินทางจาก Google Maps แทนการกรอกเอง — ถ้าไม่ตั้งค่าอะไรเลย ระบบทำงานในโหมด Manual เหมือนเดิมทุกประการ
+
+**เปิดใช้งาน:**
+1. สร้างโปรเจกต์ใน [Google Cloud Console](https://console.cloud.google.com/) แล้วเปิดใช้ 3 API นี้เท่านั้น: **Maps JavaScript API**, **Places API (New)**, **Routes API**
+2. สร้าง API key แล้ว**จำกัดสิทธิ์ก่อนใช้งานจริงเสมอ**:
+   - **Application restrictions** → HTTP referrers → ใส่โดเมนที่ใช้งานจริง (เช่น `https://tdss-gules.vercel.app/*`, `http://localhost:5174/*` สำหรับ dev)
+   - **API restrictions** → จำกัดให้ใช้ได้แค่ 3 API ข้างต้นเท่านั้น
+3. ตั้ง **Budget Alert** ที่ Billing → Budgets & alerts (แนะนำตั้งแจ้งเตือนที่ระดับต่ำ เช่น $5-10 เพราะโปรเจกต์นี้ใช้แค่เพื่อการทดสอบ/วิจัย)
+4. ใส่ค่าใน `frontend/.env`:
+   ```
+   VITE_GOOGLE_MAPS_API_KEY=<API key ที่จำกัดสิทธิ์แล้ว>
+   ```
+5. รีสตาร์ท `npm run dev` — เมนู "เส้นทาง" จะมีตัวเลือก "ค้นหาจาก Google Maps" ขึ้นมาเพิ่มตอนกด "+ เพิ่มเส้นทาง"
+
+**ขอบเขตที่ทำ**: เลือกต้นทาง/ปลายทาง (Places Autocomplete) → แสดงแผนที่ → ดึงระยะทาง+เวลาเดินทางปกติ (ไม่รวม live traffic) → ส่งเข้า `distance_km`/`estimated_duration_minutes` ของ Route ตัวเดียวกับที่ AHP ใช้คำนวณอยู่แล้ว — **ไม่มี** Live Traffic, Route Optimization, GPS Tracking, หรือ Fleet Management
+
 ## หมายเหตุ
 
 ไฟล์ `.mp4` ในโฟลเดอร์นี้ (วิดีโออ้างอิง/ตัวอย่าง prototype) ถูกใส่ไว้ใน `.gitignore` เพราะไฟล์ใหญ่ — ไม่ได้ลบ แค่ไม่เข้า git
