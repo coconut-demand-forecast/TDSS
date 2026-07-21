@@ -1,5 +1,6 @@
 import pytest
 
+from app.tdss.models import CRITERIA
 from app.tdss.services.ahp_service import (
     build_matrix,
     calculate_weights,
@@ -52,29 +53,63 @@ def test_missing_pair_raises():
         build_matrix({})
 
 
-def test_single_pair_weights_match_hand_calculation():
-    """Only cost-vs-time differs from 1 (cost is 3x more important than
-    time); every other pair is tied. This keeps the arithmetic small enough
-    to verify by hand against the documented normalized-column-average
-    method (see ahp_service module docstring):
-
-    Column sums: cost=1+1/3+1+1+1+1=16/3, time=3+1+1+1+1+1=8, others=6.
-    Normalized row averages (exact fractions, denominator 288):
-      cost = (3/16 + 3/8 + 4*(1/6)) / 6 = (9+18+32)/288 = 59/288
-      time = (1/16 + 1/8 + 4*(1/6)) / 6 = (3+6+32)/288  = 41/288
-      each of {utilization,reliability,co2,suitability}
-           = (3/16 + 1/8 + 4*(1/6)) / 6 = (9+6+32)/288  = 47/288
-    Sanity check: 59+41+47*4 = 288 -> weights sum to exactly 1.
+def test_eigenvector_recovers_exact_consistent_weights():
+    """Hand-verifiable ground truth for the Principal Eigenvector method:
+    build a matrix directly from a chosen target weight vector
+    w = [3, 2, 1, 1, 1, 1] (unnormalized) via pairwise[a,b] = w[a]/w[b].
+    For any such matrix, A @ w == n * w exactly (by construction:
+    (A w)_i = sum_j (w_i/w_j) * w_j = sum_j w_i = n * w_i), so w/sum(w) IS
+    the principal eigenvector with eigenvalue n — provable by hand,
+    independent of numpy's internal algorithm. This also makes the matrix
+    perfectly consistent: lambda_max = n exactly, so CI = CR = 0.
     """
-    pairwise = {pair_key(a, b): 1.0 for a, b in upper_triangle_pairs()}
-    pairwise[pair_key("cost", "time")] = 3.0
+    target = {"cost": 3.0, "time": 2.0, "utilization": 1.0, "reliability": 1.0, "co2": 1.0, "suitability": 1.0}
+    pairwise = {pair_key(a, b): target[a] / target[b] for a, b in upper_triangle_pairs()}
 
     matrix = build_matrix(pairwise)
     result = calculate_weights(matrix)
     w = result["weights"]
 
-    assert abs(w["cost"] - 59 / 288) < 1e-6
-    assert abs(w["time"] - 41 / 288) < 1e-6
-    for c in ("utilization", "reliability", "co2", "suitability"):
-        assert abs(w[c] - 47 / 288) < 1e-6
-    assert abs(sum(w.values()) - 1.0) < 1e-4  # calculate_weights rounds each weight to 6dp
+    total = sum(target.values())  # 9
+    for criterion, value in target.items():
+        assert abs(w[criterion] - value / total) < 1e-6
+    assert abs(result["lambda_max"] - 6.0) < 1e-6
+    assert result["ci"] < 1e-6
+    assert result["cr"] < 1e-6
+    assert result["is_consistent"] is True
+
+
+def _normalized_column_average_weights(matrix: list[list[float]]) -> dict[str, float]:
+    """Reference implementation of the method calculate_weights() used
+    *before* switching to the exact Principal Eigenvector method — kept
+    only here, as an independent point of comparison for the test below,
+    not used anywhere in production code."""
+    import numpy as np
+
+    m = np.array(matrix, dtype=float)
+    col_sums = m.sum(axis=0)
+    normalized = m / col_sums
+    weights = normalized.mean(axis=1)
+    return {CRITERIA[i]: float(weights[i]) for i in range(len(CRITERIA))}
+
+
+def test_eigenvector_close_to_previous_column_average_method_for_near_consistent_matrix():
+    """Documents the expected before/after relationship when switching
+    calculate_weights() from normalized-column-average to the exact
+    Principal Eigenvector method: for a matrix that is only slightly
+    inconsistent (one pair perturbed from 1), the two methods should
+    produce nearly identical weights — they provably coincide exactly for
+    perfectly consistent matrices, and this case is close to that limit.
+    """
+    pairwise = {pair_key(a, b): 1.0 for a, b in upper_triangle_pairs()}
+    pairwise[pair_key("cost", "time")] = 3.0
+    matrix = build_matrix(pairwise)
+
+    new_weights = calculate_weights(matrix)["weights"]
+    old_weights = _normalized_column_average_weights(matrix)
+
+    for criterion in new_weights:
+        assert abs(new_weights[criterion] - old_weights[criterion]) < 0.01
+    # But not literally the same computation - the two methods are free to
+    # differ at higher precision even though they agree closely here.
+    assert new_weights != old_weights

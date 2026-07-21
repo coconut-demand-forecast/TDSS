@@ -38,7 +38,7 @@ export const PROFILE_TEMPLATES: ProfileTemplate[] = [
   {
     key: 'cost',
     label: 'Cost Optimization',
-    description: 'เน้นต้นทุนต่ำที่สุดเป็นหลัก (41.1%) รองลงมาคือเวลา (26.0%) เหมาะกับงานที่ควบคุมงบประมาณเข้มงวด',
+    description: 'เน้นต้นทุนต่ำที่สุดเป็นหลัก (41.2%) รองลงมาคือเวลา (25.9%) เหมาะกับงานที่ควบคุมงบประมาณเข้มงวด',
     pairwise: {
       cost__time: 1.7,
       cost__utilization: 9,
@@ -60,7 +60,7 @@ export const PROFILE_TEMPLATES: ProfileTemplate[] = [
   {
     key: 'fast',
     label: 'Fast Delivery',
-    description: 'เน้นความรวดเร็วในการส่งมอบเป็นหลัก (41.1%) รองลงมาคือความน่าเชื่อถือ (26.0%) เหมาะกับงานเร่งด่วน',
+    description: 'เน้นความรวดเร็วในการส่งมอบเป็นหลัก (41.2%) รองลงมาคือความน่าเชื่อถือ (25.9%) เหมาะกับงานเร่งด่วน',
     pairwise: {
       cost__time: 0.346021,
       cost__utilization: 2.89,
@@ -82,7 +82,7 @@ export const PROFILE_TEMPLATES: ProfileTemplate[] = [
   {
     key: 'reliability',
     label: 'Reliability First',
-    description: 'เน้นความน่าเชื่อถือในการส่งมอบตรงเวลาเป็นหลัก (41.1%) เหมาะกับสินค้าที่พลาดกำหนดส่งไม่ได้',
+    description: 'เน้นความน่าเชื่อถือในการส่งมอบตรงเวลาเป็นหลัก (41.2%) เหมาะกับสินค้าที่พลาดกำหนดส่งไม่ได้',
     pairwise: {
       cost__time: 0.588235,
       cost__utilization: 4.913,
@@ -104,7 +104,7 @@ export const PROFILE_TEMPLATES: ProfileTemplate[] = [
   {
     key: 'green',
     label: 'Green Logistics',
-    description: 'เน้นลดการปล่อย CO2 เป็นหลัก (41.1%) รองลงมาคือความเหมาะสมของเส้นทาง/ยานพาหนะ (26.0%)',
+    description: 'เน้นลดการปล่อย CO2 เป็นหลัก (41.2%) รองลงมาคือความเหมาะสมของเส้นทาง/ยานพาหนะ (25.9%)',
     pairwise: {
       cost__time: 0.588235,
       cost__utilization: 2.89,
@@ -126,7 +126,7 @@ export const PROFILE_TEMPLATES: ProfileTemplate[] = [
   {
     key: 'capacity',
     label: 'Capacity Optimization',
-    description: 'เน้นใช้ความจุยานพาหนะให้คุ้มค่าที่สุดเป็นหลัก (41.1%) เหมาะกับองค์กรที่ต้องการลดจำนวนเที่ยววิ่ง',
+    description: 'เน้นใช้ความจุยานพาหนะให้คุ้มค่าที่สุดเป็นหลัก (41.2%) เหมาะกับองค์กรที่ต้องการลดจำนวนเที่ยววิ่ง',
     pairwise: {
       cost__time: 2.89,
       cost__utilization: 0.588235,
@@ -148,7 +148,7 @@ export const PROFILE_TEMPLATES: ProfileTemplate[] = [
   {
     key: 'suitability',
     label: 'Suitability Priority',
-    description: 'เน้นความเหมาะสมของเส้นทาง/ยานพาหนะกับสินค้าเป็นหลัก (41.1%) เหมาะกับสินค้าพิเศษ เช่น แตกหักง่ายหรืออันตราย',
+    description: 'เน้นความเหมาะสมของเส้นทาง/ยานพาหนะกับสินค้าเป็นหลัก (41.2%) เหมาะกับสินค้าพิเศษ เช่น แตกหักง่ายหรืออันตราย',
     pairwise: {
       cost__time: 0.588235,
       cost__utilization: 2.89,

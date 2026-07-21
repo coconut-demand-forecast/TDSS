@@ -1,6 +1,13 @@
 // Mirrors backend/app/tdss/services/ahp_service.py so the form can show a
 // live weights/CR preview before submitting. The backend recomputes and is
 // the source of truth on save.
+//
+// Weights use the exact Principal Eigenvector method, computed here via
+// power iteration (no numpy/eig equivalent in the browser) — for a
+// positive reciprocal matrix this converges to the same dominant
+// eigenvector numpy.linalg.eig finds on the backend, just iteratively
+// instead of via a full eigendecomposition. Convergence is effectively
+// exact within ~30 iterations for 6x6 Saaty matrices.
 export const CRITERIA = ['cost', 'time', 'utilization', 'reliability', 'co2', 'suitability'] as const;
 export const CRITERIA_LABELS: Record<string, string> = {
   cost: 'ต้นทุน',
@@ -47,12 +54,26 @@ export function buildMatrix(pairwise: Record<string, number>): number[][] {
   return m;
 }
 
-export function calculateWeights(matrix: number[][]) {
-  const colSums = Array(N).fill(0);
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) colSums[j] += matrix[i][j];
+function principalEigenvector(matrix: number[][]): number[] {
+  let v = Array(N).fill(1);
+  for (let iter = 0; iter < 200; iter++) {
+    const next = matrix.map((row) => row.reduce((acc, val, j) => acc + val * v[j], 0));
+    const norm = Math.sqrt(next.reduce((acc, x) => acc + x * x, 0));
+    const normalized = next.map((x) => x / norm);
+    const diff = normalized.reduce((acc, x, i) => acc + Math.abs(x - v[i]), 0);
+    v = normalized;
+    if (diff < 1e-14) break;
+  }
+  // Positive by construction (positive matrix x positive vector stays positive),
+  // but guard defensively to mirror the backend's explicit sign check.
+  const sum = v.reduce((a, b) => a + b, 0);
+  return sum < 0 ? v.map((x) => -x) : v;
+}
 
-  const normalized = matrix.map((row) => row.map((v, j) => v / colSums[j]));
-  const weights = normalized.map((row) => row.reduce((a, b) => a + b, 0) / N);
+export function calculateWeights(matrix: number[][]) {
+  const vector = principalEigenvector(matrix);
+  const vectorSum = vector.reduce((a, b) => a + b, 0);
+  const weights = vector.map((x) => x / vectorSum);
 
   const weightedSum = matrix.map((row) => row.reduce((acc, v, j) => acc + v * weights[j], 0));
   const lambdaMax = weightedSum.reduce((acc, ws, i) => acc + ws / weights[i], 0) / N;

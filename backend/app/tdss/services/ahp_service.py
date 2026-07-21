@@ -6,17 +6,27 @@ the upper-triangle comparisons only (15 pairs for 6 criteria); the lower
 triangle is always the reciprocal, and the diagonal is always 1 — this is
 what makes the matrix a valid Saaty reciprocal matrix by construction.
 
-Weight calculation uses the normalized-column-average method (a standard,
-easily-documented approximation to the principal eigenvector — exact for
-consistent matrices, and simple enough to unit-test deterministically):
+Weight calculation uses the exact Principal Eigenvector method:
 
-  1. Normalize each column of the matrix (divide by its column sum).
-  2. The weight for each criterion is the average of its row in the
-     normalized matrix. Weights sum to 1 by construction.
-  3. lambda_max = mean_i( (matrix @ weights)_i / weights_i )
-  4. CI = (lambda_max - n) / (n - 1)
-  5. CR = CI / RI[n]   (RI = Saaty's Random Index table)
-  6. Consistent when CR <= 0.10 (Saaty's standard threshold).
+  1. Compute the eigenvalues/eigenvectors of the matrix (numpy.linalg.eig).
+  2. Take the eigenvector belonging to the largest eigenvalue (lambda_max)
+     — guaranteed real and positive for a positive reciprocal matrix by the
+     Perron-Frobenius theorem.
+  3. Flip its sign if needed so all components are positive, then
+     normalize so the weights sum to 1.
+  4. Recompute lambda_max from that same weight vector:
+     lambda_max = mean_i( (matrix @ weights)_i / weights_i )
+     — the standard Saaty formula, so CI/CR are derived consistently
+     regardless of how the weights themselves were obtained.
+  5. CI = (lambda_max - n) / (n - 1)
+  6. CR = CI / RI[n]   (RI = Saaty's Random Index table)
+  7. Consistent when CR <= 0.10 (Saaty's standard threshold).
+
+For a perfectly consistent matrix this recovers the exact generating
+weight vector (Aw = n*w by construction); for a near-consistent matrix it
+is very close to the normalized-column-average approximation this module
+used previously — see tests/test_ahp_service.py for both properties
+verified numerically.
 """
 
 import numpy as np
@@ -24,6 +34,15 @@ import numpy as np
 from app.tdss.models import CRITERIA, RANDOM_INDEX
 
 N = len(CRITERIA)
+
+
+def _principal_eigenvector(m: np.ndarray) -> np.ndarray:
+    eigenvalues, eigenvectors = np.linalg.eig(m)
+    idx = int(np.argmax(eigenvalues.real))
+    vector = eigenvectors[:, idx].real
+    if vector.sum() < 0:
+        vector = -vector
+    return vector
 
 
 def pair_key(a: str, b: str) -> str:
@@ -54,9 +73,8 @@ def build_matrix(pairwise: dict[str, float]) -> list[list[float]]:
 
 def calculate_weights(matrix: list[list[float]]) -> dict:
     m = np.array(matrix, dtype=float)
-    col_sums = m.sum(axis=0)
-    normalized = m / col_sums
-    weights = normalized.mean(axis=1)
+    vector = _principal_eigenvector(m)
+    weights = vector / vector.sum()
 
     weighted_sum = m @ weights
     lambda_max = float(np.mean(weighted_sum / weights))
