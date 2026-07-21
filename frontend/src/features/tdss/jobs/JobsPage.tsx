@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Button, Card, Dialog, EmptyState, Field, Input, LoadingState, PageHeader, Select, StatusBadge, Table, Td, TextArea, Th } from '../../../components/ui';
@@ -29,6 +30,7 @@ const EMPTY_FORM = {
 };
 
 export default function JobsPage() {
+  const { t } = useLanguage();
   const { currentOrgId, user } = useAuth();
   const { showSuccess, showError } = useToast();
   const navigate = useNavigate();
@@ -91,9 +93,9 @@ export default function JobsPage() {
   };
 
   return (
-    <OrgWorkspaceLayout title="งานขนส่ง">
+    <OrgWorkspaceLayout title={t('nav.jobs')}>
       <PageHeader
-        title="งานขนส่ง"
+        title={t('nav.jobs')}
         subtitle="สร้างและติดตามงานขนส่ง"
         actions={
           <>

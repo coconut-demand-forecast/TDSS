@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OwnerConsoleLayout from '../../../layouts/OwnerConsoleLayout';
 import { Card, LoadingState, PageHeader, Table, Td, Th } from '../../../components/ui';
 import { useToast } from '../../../context/ToastContext';
 import { aiApi, type AIInsights } from '../../../api';
 
 export default function OwnerAIInsightsPage() {
+  const { t } = useLanguage();
   const { showError } = useToast();
   const [data, setData] = useState<AIInsights | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +22,7 @@ export default function OwnerAIInsightsPage() {
 
   if (loading || !data) {
     return (
-      <OwnerConsoleLayout title="ข้อมูลเชิงลึก AI">
+      <OwnerConsoleLayout title={t('nav.owner-ai-insights')}>
         <LoadingState card />
       </OwnerConsoleLayout>
     );
@@ -34,8 +36,8 @@ export default function OwnerAIInsightsPage() {
   ];
 
   return (
-    <OwnerConsoleLayout title="ข้อมูลเชิงลึก AI">
-      <PageHeader title="ข้อมูลเชิงลึก AI ทั้งแพลตฟอร์ม" subtitle="สรุปพฤติกรรมการตัดสินใจของ Planner เทียบกับคำแนะนำจาก AHP ในทุกองค์กร" />
+    <OwnerConsoleLayout title={t('nav.owner-ai-insights')}>
+      <PageHeader title={t('pageTitle.ownerAiInsightsFull')} subtitle="สรุปพฤติกรรมการตัดสินใจของ Planner เทียบกับคำแนะนำจาก AHP ในทุกองค์กร" />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14, marginBottom: 20 }}>
         {kpis.map((k) => (

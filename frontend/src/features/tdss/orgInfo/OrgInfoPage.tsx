@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Button, Card, Field, Input, LoadingState, PageHeader, StatusBadge } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
@@ -15,6 +16,7 @@ const FEATURE_LABELS: Record<string, string> = {
 };
 
 export default function OrgInfoPage() {
+  const { t } = useLanguage();
   const { currentOrgId, user } = useAuth();
   const { showSuccess, showError } = useToast();
   const [info, setInfo] = useState<OrganizationInfo | null>(null);
@@ -67,16 +69,16 @@ export default function OrgInfoPage() {
 
   if (loading || !info) {
     return (
-      <OrgWorkspaceLayout title="ข้อมูลองค์กร">
+      <OrgWorkspaceLayout title={t('nav.org-info')}>
         <LoadingState card />
       </OrgWorkspaceLayout>
     );
   }
 
   return (
-    <OrgWorkspaceLayout title="ข้อมูลองค์กร">
+    <OrgWorkspaceLayout title={t('nav.org-info')}>
       <PageHeader
-        title="ข้อมูลองค์กร"
+        title={t('nav.org-info')}
         subtitle="ข้อมูลพื้นฐานและการใช้งานขององค์กร"
         actions={
           canEdit && !editing ? (

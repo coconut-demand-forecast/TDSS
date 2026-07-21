@@ -9,3 +9,4 @@ export { Field, Input, TextArea, Select } from './Field';
 export { default as Dialog } from './Dialog';
 export { default as Spinner } from './Spinner';
 export { default as DateRangePicker, presetToRange, type DateRange } from './DateRangePicker';
+export { default as LanguageToggle } from './LanguageToggle';

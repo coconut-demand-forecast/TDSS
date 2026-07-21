@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OwnerConsoleLayout from '../../../layouts/OwnerConsoleLayout';
 import { Button, Card, Input, LoadingState, PageHeader, StatusBadge, Table, Td, Th } from '../../../components/ui';
 import { useToast } from '../../../context/ToastContext';
@@ -14,6 +15,7 @@ interface OwnerUserRow {
 }
 
 export default function OwnerUsersPage() {
+  const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const [users, setUsers] = useState<OwnerUserRow[]>([]);
   const [search, setSearch] = useState('');
@@ -46,9 +48,9 @@ export default function OwnerUsersPage() {
   };
 
   return (
-    <OwnerConsoleLayout title="ผู้ใช้งานทั้งหมด">
+    <OwnerConsoleLayout title={t('nav.owner-users')}>
       <PageHeader
-        title="ผู้ใช้งานทั้งหมด"
+        title={t('nav.owner-users')}
         subtitle="ดูและจัดการผู้ใช้งานข้ามทุกองค์กร"
         actions={<Input placeholder="ค้นหา..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load()} style={{ width: 220 }} />}
       />

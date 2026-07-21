@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Button, Card, Field, Input, PageHeader } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { authApi } from '../../../api';
 
 export default function ProfileForm() {
+  const { t } = useLanguage();
   const { user, refreshUser } = useAuth();
   const { showSuccess, showError } = useToast();
   const [name, setName] = useState(user?.name ?? '');
@@ -47,7 +49,7 @@ export default function ProfileForm() {
 
   return (
     <>
-      <PageHeader title="โปรไฟล์ของฉัน" subtitle={user?.email} />
+      <PageHeader title={t('pageTitle.myProfile')} subtitle={user?.email} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <Card>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OwnerConsoleLayout from '../../../layouts/OwnerConsoleLayout';
 import { Button, Card, Dialog, Field, Input, LoadingState, PageHeader, StatusBadge, Table, Td, Th } from '../../../components/ui';
 import { useToast } from '../../../context/ToastContext';
@@ -14,6 +15,7 @@ const FEATURE_LABELS: Record<string, string> = {
 };
 
 export default function OwnerOrganizationsPage() {
+  const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const [orgs, setOrgs] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,8 +85,8 @@ export default function OwnerOrganizationsPage() {
   };
 
   return (
-    <OwnerConsoleLayout title="องค์กรทั้งหมด">
-      <PageHeader title="องค์กรทั้งหมด" subtitle="จัดการองค์กรและสิทธิ์การใช้งานฟีเจอร์" actions={<Button onClick={() => setShowCreate(true)}>+ สร้างองค์กรใหม่</Button>} />
+    <OwnerConsoleLayout title={t('nav.owner-orgs')}>
+      <PageHeader title={t('nav.owner-orgs')} subtitle="จัดการองค์กรและสิทธิ์การใช้งานฟีเจอร์" actions={<Button onClick={() => setShowCreate(true)}>+ สร้างองค์กรใหม่</Button>} />
 
       {loading ? (
         <LoadingState card />

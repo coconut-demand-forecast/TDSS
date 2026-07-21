@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OwnerConsoleLayout from '../../../layouts/OwnerConsoleLayout';
 import { Card, LoadingState, PageHeader, Table, Td, Th } from '../../../components/ui';
 import { useToast } from '../../../context/ToastContext';
 import { auditApi, type AuditLogEntry } from '../../../api';
 
 export default function OwnerAuditLogsPage() {
+  const { t } = useLanguage();
   const { showError } = useToast();
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,8 +21,8 @@ export default function OwnerAuditLogsPage() {
   }, []);
 
   return (
-    <OwnerConsoleLayout title="บันทึกการใช้งาน">
-      <PageHeader title="บันทึกการใช้งานทั้งระบบ (Audit Log)" subtitle="ประวัติการกระทำทุกองค์กร ล่าสุด 500 รายการ" />
+    <OwnerConsoleLayout title={t('nav.owner-audit')}>
+      <PageHeader title={t('pageTitle.ownerAuditFull')} subtitle="ประวัติการกระทำทุกองค์กร ล่าสุด 500 รายการ" />
       {loading ? (
         <LoadingState card />
       ) : (

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Button, Card, Dialog, EmptyState, Field, Input, LoadingState, PageHeader, StatusBadge, TextArea } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
@@ -26,6 +27,7 @@ const EMPTY_PAIRWISE = () => {
 };
 
 export default function DecisionProfilesPage() {
+  const { t } = useLanguage();
   const { currentOrgId, user } = useAuth();
   const { showSuccess, showError } = useToast();
   const [profiles, setProfiles] = useState<DecisionProfile[]>([]);
@@ -154,9 +156,9 @@ export default function DecisionProfilesPage() {
   };
 
   return (
-    <OrgWorkspaceLayout title="โปรไฟล์การตัดสินใจ (AHP)">
+    <OrgWorkspaceLayout title={t('nav.decision-profiles')}>
       <PageHeader
-        title="โปรไฟล์การตัดสินใจ (AHP)"
+        title={t('nav.decision-profiles')}
         subtitle="กำหนดน้ำหนักความสำคัญของเกณฑ์ต่างๆ ด้วยวิธี Analytic Hierarchy Process"
         actions={canWrite && <Button onClick={openCreate}>+ สร้างโปรไฟล์ใหม่</Button>}
       />

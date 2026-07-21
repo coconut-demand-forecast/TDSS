@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Button, Card, DateRangePicker, LoadingState, PageHeader, Table, Th, Td, presetToRange, type DateRange } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
@@ -14,6 +15,7 @@ const REPORTS = [
 ] as const;
 
 export default function ReportsPage() {
+  const { t } = useLanguage();
   const { currentOrgId } = useAuth();
   const { showError, showSuccess } = useToast();
   const [range, setRange] = useState<DateRange>(() => presetToRange(30));
@@ -29,9 +31,9 @@ export default function ReportsPage() {
   };
 
   return (
-    <OrgWorkspaceLayout title="รายงาน">
+    <OrgWorkspaceLayout title={t('nav.reports')}>
       <PageHeader
-        title="รายงาน"
+        title={t('nav.reports')}
         subtitle={`ส่งออกรายงานเป็นไฟล์ PDF — ช่วงเวลา: ${range.label} (มีผลกับทั้งตารางและไฟล์ที่ดาวน์โหลด)`}
         actions={<DateRangePicker onChange={setRange} />}
       />
@@ -48,7 +50,7 @@ export default function ReportsPage() {
       </div>
 
       <div style={{ marginTop: 20 }}>
-        <PageHeader title="บันทึกการใช้งาน (Audit Log)" subtitle={`ประวัติการสร้าง/แก้ไข/อนุมัติในองค์กร — ช่วงเวลา: ${range.label}`} />
+        <PageHeader title={t('pageTitle.auditLog')} subtitle={`ประวัติการสร้าง/แก้ไข/อนุมัติในองค์กร — ช่วงเวลา: ${range.label}`} />
         <AuditLogTable range={range} />
       </div>
     </OrgWorkspaceLayout>

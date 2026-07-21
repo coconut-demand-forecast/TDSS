@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OwnerConsoleLayout from '../../../layouts/OwnerConsoleLayout';
 import { Card, LoadingState, PageHeader } from '../../../components/ui';
 import { useToast } from '../../../context/ToastContext';
 import { ownerApi, type OwnerDashboard } from '../../../api';
 
 export default function OwnerDashboardPage() {
+  const { t } = useLanguage();
   const { showError } = useToast();
   const [data, setData] = useState<OwnerDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +22,7 @@ export default function OwnerDashboardPage() {
 
   if (loading || !data) {
     return (
-      <OwnerConsoleLayout title="แดชบอร์ดระบบ">
+      <OwnerConsoleLayout title={t('nav.owner-dashboard')}>
         <LoadingState card />
       </OwnerConsoleLayout>
     );
@@ -36,8 +38,8 @@ export default function OwnerDashboardPage() {
   ];
 
   return (
-    <OwnerConsoleLayout title="แดชบอร์ดระบบ">
-      <PageHeader title="ภาพรวมระบบ" subtitle="สรุปการใช้งานทั้งแพลตฟอร์ม" />
+    <OwnerConsoleLayout title={t('nav.owner-dashboard')}>
+      <PageHeader title={t('pageTitle.ownerOverview')} subtitle="สรุปการใช้งานทั้งแพลตฟอร์ม" />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
         {kpis.map((k) => (
           <Card key={k.label} style={{ padding: 16 }}>

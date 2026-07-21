@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Button, Card, Dialog, LoadingState, PageHeader, StatusBadge, Table, Td, TextArea, Th } from '../../../components/ui';
@@ -8,6 +9,7 @@ import { planningApi, reportsApi, type Alternative, type RecommendationRun } fro
 import { CRITERIA_LABELS } from '../decisionProfiles/ahpClient';
 
 export default function RecommendationResultPage() {
+  const { t } = useLanguage();
   const { runId } = useParams();
   const { currentOrgId, user } = useAuth();
   const { showSuccess, showError } = useToast();
@@ -65,14 +67,14 @@ export default function RecommendationResultPage() {
 
   if (loading) {
     return (
-      <OrgWorkspaceLayout title="ผลการแนะนำ">
+      <OrgWorkspaceLayout title={t('pageTitle.recommendationResult')}>
         <LoadingState card />
       </OrgWorkspaceLayout>
     );
   }
   if (!run) {
     return (
-      <OrgWorkspaceLayout title="ผลการแนะนำ">
+      <OrgWorkspaceLayout title={t('pageTitle.recommendationResult')}>
         <Card>ไม่พบข้อมูลคำแนะนำนี้</Card>
       </OrgWorkspaceLayout>
     );
@@ -83,9 +85,9 @@ export default function RecommendationResultPage() {
   const infeasibleAlts = run.alternatives.filter((a) => !a.feasible);
 
   return (
-    <OrgWorkspaceLayout title="ผลการแนะนำ">
+    <OrgWorkspaceLayout title={t('pageTitle.recommendationResult')}>
       <PageHeader
-        title="ผลการแนะนำ"
+        title={t('pageTitle.recommendationResult')}
         subtitle={`คำแนะนำจากงาน #${run.job_id} · สร้างเมื่อ ${new Date(run.created_at).toLocaleString('th-TH')}`}
         actions={
           <Button variant="secondary" onClick={() => reportsApi.recommendation(currentOrgId!, run.id)}>

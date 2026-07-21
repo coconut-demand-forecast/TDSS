@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { ProtectedRoute, OwnerRoute, AdminRoute } from './components/ProtectedRoute';
 
 import LoginPage from './features/tdss/auth/LoginPage';
@@ -42,6 +43,7 @@ function HomeRedirect() {
 
 export default function App() {
   return (
+    <LanguageProvider>
     <AuthProvider>
       <ToastProvider>
         <BrowserRouter>
@@ -81,5 +83,6 @@ export default function App() {
         </BrowserRouter>
       </ToastProvider>
     </AuthProvider>
+    </LanguageProvider>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Button, Card, Dialog, EmptyState, Field, Input, LoadingState, PageHeader, Select, StatusBadge, Table, Td, Th } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
@@ -21,6 +22,7 @@ const EMPTY_FORM = {
 };
 
 export default function VehiclesPage() {
+  const { t } = useLanguage();
   const { currentOrgId, user } = useAuth();
   const { showSuccess, showError } = useToast();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -136,9 +138,9 @@ export default function VehiclesPage() {
   };
 
   return (
-    <OrgWorkspaceLayout title="ยานพาหนะ">
+    <OrgWorkspaceLayout title={t('nav.vehicles')}>
       <PageHeader
-        title="ยานพาหนะ"
+        title={t('nav.vehicles')}
         subtitle="จัดการข้อมูลยานพาหนะและความจุสำหรับใช้ในการวางแผน"
         actions={
           <>

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OwnerConsoleLayout from '../../../layouts/OwnerConsoleLayout';
 import { Card, DateRangePicker, Input, LoadingState, PageHeader, StatusBadge, Table, Td, Th, type DateRange } from '../../../components/ui';
 import { useToast } from '../../../context/ToastContext';
 import { ownerApi, type OrganizationUsageRow } from '../../../api';
 
 export default function OwnerUsagePage() {
+  const { t } = useLanguage();
   const { showError } = useToast();
   const [rows, setRows] = useState<OrganizationUsageRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,9 +30,9 @@ export default function OwnerUsagePage() {
   }, [range]);
 
   return (
-    <OwnerConsoleLayout title="การใช้งาน">
+    <OwnerConsoleLayout title={t('nav.owner-usage')}>
       <PageHeader
-        title="การใช้งานตามองค์กร"
+        title={t('pageTitle.ownerUsageByOrg')}
         subtitle={`ข้อมูลจริงจากฐานข้อมูล — ช่วงเวลา: ${range.label}`}
         actions={
           <>

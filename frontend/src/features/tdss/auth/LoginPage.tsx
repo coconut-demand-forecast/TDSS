@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import { useLanguage } from '../../../context/LanguageContext';
 import { useSystemSettings } from '../../../hooks/useSystemSettings';
-import { Button, Field, Input } from '../../../components/ui';
+import { Button, Field, Input, LanguageToggle } from '../../../components/ui';
 
 export default function LoginPage() {
   const { login, register, loading, user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const systemSettings = useSystemSettings();
   const [isRegister, setIsRegister] = useState(false);
@@ -49,59 +51,60 @@ export default function LoginPage() {
           justifyContent: 'space-between',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 13, background: 'var(--c-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>TD</div>
-          <div style={{ fontWeight: 700, fontSize: 19 }}>{systemSettings.app_display_name}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 13, background: 'var(--c-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>TD</div>
+            <div style={{ fontWeight: 700, fontSize: 19 }}>{systemSettings.app_display_name}</div>
+          </div>
+          <LanguageToggle dark />
         </div>
         <div style={{ maxWidth: 440 }}>
-          <h2 style={{ fontWeight: 700, fontSize: 29, lineHeight: 1.35, margin: '0 0 18px' }}>ระบบวางแผนงานขนส่งอัจฉริยะ</h2>
-          <p style={{ fontSize: 14.5, lineHeight: 1.7, color: '#d1d1d1' }}>
-            สร้างงานขนส่ง วางแผนเส้นทาง เลือกยานพาหนะ และรับคำแนะนำที่ดีที่สุดด้วยวิธี AHP (Analytic Hierarchy Process)
-          </p>
+          <h2 style={{ fontWeight: 700, fontSize: 29, lineHeight: 1.35, margin: '0 0 18px' }}>{t('login.heroTitle')}</h2>
+          <p style={{ fontSize: 14.5, lineHeight: 1.7, color: '#d1d1d1' }}>{t('login.heroDescription')}</p>
         </div>
-        <div style={{ fontSize: 11.5, color: '#999' }}>&copy; 2569 {systemSettings.app_display_name} — ระบบวางแผนงานขนส่ง</div>
+        <div style={{ fontSize: 11.5, color: '#999' }}>&copy; 2569 {systemSettings.app_display_name} — {t('login.footerTagline')}</div>
       </section>
 
       <section style={{ width: 460, flex: 'none', background: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '48px 56px' }}>
-        <h1 style={{ fontWeight: 700, fontSize: 24, margin: '0 0 6px' }}>{isRegister ? 'สมัครใช้งานองค์กรใหม่' : 'เข้าสู่ระบบ'}</h1>
+        <h1 style={{ fontWeight: 700, fontSize: 24, margin: '0 0 6px' }}>{isRegister ? t('login.registerTitle') : t('login.loginTitle')}</h1>
         <p style={{ fontSize: 13, color: 'var(--c-text-muted)', margin: '0 0 26px' }}>
-          {isRegister ? 'สร้างบัญชีผู้ดูแลองค์กรและองค์กรใหม่' : 'ยินดีต้อนรับกลับมา'}
+          {isRegister ? t('login.registerSubtitle') : t('login.loginSubtitle')}
         </p>
 
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
           {isRegister && (
-            <Field label="ชื่อ-นามสกุล" required>
+            <Field label={t('login.fullName')} required>
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
             </Field>
           )}
           {isRegister && (
-            <Field label="ชื่อองค์กร" required>
+            <Field label={t('login.orgName')} required>
               <Input value={orgName} onChange={(e) => setOrgName(e.target.value)} required />
             </Field>
           )}
-          <Field label="อีเมล" required>
+          <Field label={t('login.email')} required>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </Field>
-          <Field label="รหัสผ่าน" required>
+          <Field label={t('login.password')} required>
             <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
           </Field>
 
           {error && <div style={{ color: 'var(--c-accent)', fontSize: 12.5 }}>{error}</div>}
 
           <Button type="submit" loading={loading} style={{ width: '100%', justifyContent: 'center', padding: 13, fontSize: 14 }}>
-            {isRegister ? 'สมัครใช้งาน' : 'เข้าสู่ระบบ'}
+            {isRegister ? t('login.registerSubmit') : t('login.loginSubmit')}
           </Button>
         </form>
 
         <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--c-text-muted)', marginTop: 20 }}>
-          {isRegister ? 'มีบัญชีอยู่แล้ว?' : 'ยังไม่มีองค์กร?'}{' '}
+          {isRegister ? t('login.haveAccount') : t('login.noOrg')}{' '}
           <button type="button" onClick={() => setIsRegister((v) => !v)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontWeight: 600, color: 'var(--c-accent)' }}>
-            {isRegister ? 'เข้าสู่ระบบ' : 'สมัครใช้งานองค์กรใหม่'}
+            {isRegister ? t('login.switchToLogin') : t('login.switchToRegister')}
           </button>
         </div>
 
         <div style={{ marginTop: 28, padding: 14, background: '#f6f7f8', borderRadius: 10, fontSize: 11.5, color: 'var(--c-text-muted)', lineHeight: 1.6 }}>
-          <strong>บัญชีทดสอบ</strong> (รหัสผ่านทั้งหมด: password123):
+          <strong>{t('login.demoAccountsLabel')}</strong> ({t('login.demoAccountsPasswordNote')}):
           <br />
           System Owner: owner@tdss.local
           <br />

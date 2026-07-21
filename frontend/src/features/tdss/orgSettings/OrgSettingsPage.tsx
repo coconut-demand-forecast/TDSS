@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Button, Card, Field, LoadingState, PageHeader, Select } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
@@ -6,6 +7,7 @@ import { useToast } from '../../../context/ToastContext';
 import { organizationsApi, profilesApi, type DecisionProfile, type OrganizationSettings } from '../../../api';
 
 export default function OrgSettingsPage() {
+  const { t } = useLanguage();
   const { currentOrgId, user } = useAuth();
   const { showSuccess, showError } = useToast();
   const [settings, setSettings] = useState<OrganizationSettings | null>(null);
@@ -52,7 +54,7 @@ export default function OrgSettingsPage() {
 
   if (loading || !settings) {
     return (
-      <OrgWorkspaceLayout title="ตั้งค่าองค์กร">
+      <OrgWorkspaceLayout title={t('nav.org-settings')}>
         <LoadingState card />
       </OrgWorkspaceLayout>
     );
@@ -60,15 +62,15 @@ export default function OrgSettingsPage() {
 
   if (!canEdit) {
     return (
-      <OrgWorkspaceLayout title="ตั้งค่าองค์กร">
+      <OrgWorkspaceLayout title={t('nav.org-settings')}>
         <Card>เฉพาะผู้ดูแลองค์กรเท่านั้นที่สามารถแก้ไขการตั้งค่านี้ได้ — คุณดูได้แต่ไม่สามารถแก้ไข</Card>
       </OrgWorkspaceLayout>
     );
   }
 
   return (
-    <OrgWorkspaceLayout title="ตั้งค่าองค์กร">
-      <PageHeader title="ตั้งค่าองค์กร" subtitle="ค่าเริ่มต้นและการแจ้งเตือนที่มีผลต่อการทำงานจริงของระบบ" />
+    <OrgWorkspaceLayout title={t('nav.org-settings')}>
+      <PageHeader title={t('nav.org-settings')} subtitle="ค่าเริ่มต้นและการแจ้งเตือนที่มีผลต่อการทำงานจริงของระบบ" />
 
       <Card style={{ maxWidth: 560 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Card, DateRangePicker, LoadingState, PageHeader, presetToRange, StatusBadge, type DateRange } from '../../../components/ui';
@@ -25,6 +26,7 @@ interface RecentJob {
 }
 
 export default function DashboardPage() {
+  const { t } = useLanguage();
   const { currentOrgId, user } = useAuth();
   const { showError } = useToast();
   const navigate = useNavigate();
@@ -61,7 +63,7 @@ export default function DashboardPage() {
 
   if (loading || !summary) {
     return (
-      <OrgWorkspaceLayout title="แดชบอร์ด">
+      <OrgWorkspaceLayout title={t('nav.dashboard')}>
         <LoadingState card />
       </OrgWorkspaceLayout>
     );
@@ -79,8 +81,8 @@ export default function DashboardPage() {
   ];
 
   return (
-    <OrgWorkspaceLayout title="แดชบอร์ด">
-      <PageHeader title="ภาพรวมองค์กร" subtitle={membership?.organization_name} actions={<DateRangePicker onChange={setRange} />} />
+    <OrgWorkspaceLayout title={t('nav.dashboard')}>
+      <PageHeader title={t('pageTitle.orgOverview')} subtitle={membership?.organization_name} actions={<DateRangePicker onChange={setRange} />} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14, marginBottom: 20 }}>
         {kpis.map((k) => (

@@ -1,11 +1,14 @@
 import { type ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useSystemSettings } from '../hooks/useSystemSettings';
+import { LanguageToggle } from '../components/ui';
 import { OWNER_NAV } from './navConfig';
 
 export default function OwnerConsoleLayout({ title, children }: { title: string; children: ReactNode }) {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const systemSettings = useSystemSettings();
 
@@ -49,17 +52,20 @@ export default function OwnerConsoleLayout({ title, children }: { title: string;
                 fontWeight: isActive ? 600 : 500,
               })}
             >
-              {item.label}
+              {t(`nav.${item.key}`)}
             </NavLink>
           ))}
         </nav>
 
+        <div style={{ padding: '0 16px 10px' }}>
+          <LanguageToggle dark />
+        </div>
         <div style={{ padding: 10, borderTop: '1px solid rgba(255,255,255,.08)' }}>
           <button
             onClick={doLogout}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, border: 'none', background: 'transparent', color: 'rgba(255,255,255,.6)', fontSize: 12.5, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}
           >
-            ออกจากระบบ
+            {t('common.logout')}
           </button>
         </div>
       </aside>

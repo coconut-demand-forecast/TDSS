@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Button, Card, Dialog, EmptyState, Field, Input, LoadingState, PageHeader, Select, StatusBadge, Table, Td, TextArea, Th } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
@@ -22,6 +23,7 @@ const EMPTY_FORM = {
 };
 
 export default function RoutesPage() {
+  const { t } = useLanguage();
   const { currentOrgId, user } = useAuth();
   const { showSuccess, showError } = useToast();
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -143,9 +145,9 @@ export default function RoutesPage() {
   };
 
   return (
-    <OrgWorkspaceLayout title="เส้นทาง">
+    <OrgWorkspaceLayout title={t('nav.routes')}>
       <PageHeader
-        title="เส้นทาง"
+        title={t('nav.routes')}
         subtitle={GOOGLE_MAPS_AVAILABLE ? 'จัดการเส้นทางขนส่ง (เชื่อมต่อ Google Maps แล้ว)' : 'จัดการเส้นทางขนส่ง (โหมด Manual — ยังไม่ได้เชื่อมต่อ Google Maps API)'}
         actions={
           <>

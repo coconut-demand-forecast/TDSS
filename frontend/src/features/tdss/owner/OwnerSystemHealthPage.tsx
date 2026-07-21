@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OwnerConsoleLayout from '../../../layouts/OwnerConsoleLayout';
 import { Card, LoadingState, PageHeader, StatusBadge } from '../../../components/ui';
 import { useToast } from '../../../context/ToastContext';
 import { ownerApi, type SystemHealth } from '../../../api';
 
 export default function OwnerSystemHealthPage() {
+  const { t } = useLanguage();
   const { showError } = useToast();
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,15 +22,15 @@ export default function OwnerSystemHealthPage() {
 
   if (loading || !health) {
     return (
-      <OwnerConsoleLayout title="สถานะระบบ">
+      <OwnerConsoleLayout title={t('nav.owner-health')}>
         <LoadingState card />
       </OwnerConsoleLayout>
     );
   }
 
   return (
-    <OwnerConsoleLayout title="สถานะระบบ">
-      <PageHeader title="สถานะระบบ" subtitle="ข้อมูลจริงจากแอปพลิเคชัน ไม่มีการจำลองข้อมูล" />
+    <OwnerConsoleLayout title={t('nav.owner-health')}>
+      <PageHeader title={t('nav.owner-health')} subtitle="ข้อมูลจริงจากแอปพลิเคชัน ไม่มีการจำลองข้อมูล" />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
         <Card>
           <div style={{ fontSize: 11, color: 'var(--c-text-muted)', marginBottom: 8 }}>สถานะ API</div>

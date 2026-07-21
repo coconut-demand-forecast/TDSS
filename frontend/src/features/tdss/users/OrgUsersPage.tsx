@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Button, Card, Dialog, Field, Input, LoadingState, PageHeader, Select, StatusBadge, Table, Td, Th } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
@@ -6,6 +7,7 @@ import { useToast } from '../../../context/ToastContext';
 import { organizationsApi, type OrgUser } from '../../../api';
 
 export default function OrgUsersPage() {
+  const { t } = useLanguage();
   const { currentOrgId } = useAuth();
   const { showSuccess, showError } = useToast();
   const [users, setUsers] = useState<OrgUser[]>([]);
@@ -75,8 +77,8 @@ export default function OrgUsersPage() {
   };
 
   return (
-    <OrgWorkspaceLayout title="ผู้ใช้งานองค์กร">
-      <PageHeader title="ผู้ใช้งานองค์กร" subtitle="จัดการสมาชิกและบทบาทในองค์กร" actions={<Button onClick={() => setShowForm(true)}>+ เพิ่มผู้ใช้งาน</Button>} />
+    <OrgWorkspaceLayout title={t('nav.users')}>
+      <PageHeader title={t('nav.users')} subtitle="จัดการสมาชิกและบทบาทในองค์กร" actions={<Button onClick={() => setShowForm(true)}>+ เพิ่มผู้ใช้งาน</Button>} />
 
       {loading ? (
         <LoadingState card />

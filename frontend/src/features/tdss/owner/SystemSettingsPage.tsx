@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OwnerConsoleLayout from '../../../layouts/OwnerConsoleLayout';
 import { Button, Card, Field, Input, LoadingState, PageHeader, TextArea } from '../../../components/ui';
 import { useToast } from '../../../context/ToastContext';
 import { systemSettingsApi, type SystemSettings } from '../../../api';
 
 export default function SystemSettingsPage() {
+  const { t } = useLanguage();
   const { showSuccess, showError } = useToast();
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,15 +41,15 @@ export default function SystemSettingsPage() {
 
   if (loading || !settings) {
     return (
-      <OwnerConsoleLayout title="ตั้งค่าระบบ">
+      <OwnerConsoleLayout title={t('nav.owner-system-settings')}>
         <LoadingState card />
       </OwnerConsoleLayout>
     );
   }
 
   return (
-    <OwnerConsoleLayout title="ตั้งค่าระบบ">
-      <PageHeader title="ตั้งค่าระบบ" subtitle="ตั้งค่าที่มีผลจริงต่อการแสดงผลของแอปพลิเคชันเท่านั้น" />
+    <OwnerConsoleLayout title={t('nav.owner-system-settings')}>
+      <PageHeader title={t('nav.owner-system-settings')} subtitle="ตั้งค่าที่มีผลจริงต่อการแสดงผลของแอปพลิเคชันเท่านั้น" />
       <Card style={{ maxWidth: 560 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <Field label="ชื่อแอปพลิเคชัน" required>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Button, Card, Field, Input, LoadingState, PageHeader, Select, StatusBadge, TextArea } from '../../../components/ui';
@@ -14,6 +15,7 @@ interface RunHistoryItem {
 }
 
 export default function JobDetailPage() {
+  const { t } = useLanguage();
   const { jobId } = useParams();
   const { currentOrgId, user } = useAuth();
   const { showSuccess, showError } = useToast();
@@ -96,14 +98,14 @@ export default function JobDetailPage() {
 
   if (loading) {
     return (
-      <OrgWorkspaceLayout title="รายละเอียดงานขนส่ง">
+      <OrgWorkspaceLayout title={t('pageTitle.jobDetail')}>
         <LoadingState card />
       </OrgWorkspaceLayout>
     );
   }
   if (!job) {
     return (
-      <OrgWorkspaceLayout title="รายละเอียดงานขนส่ง">
+      <OrgWorkspaceLayout title={t('pageTitle.jobDetail')}>
         <Card>ไม่พบงานขนส่งนี้</Card>
       </OrgWorkspaceLayout>
     );

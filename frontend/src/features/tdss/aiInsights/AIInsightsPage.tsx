@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../../context/LanguageContext';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Button, Card, LoadingState, PageHeader, Table, Td, Th } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
@@ -6,6 +7,7 @@ import { useToast } from '../../../context/ToastContext';
 import { aiApi, type AIInsights } from '../../../api';
 
 export default function AIInsightsPage() {
+  const { t } = useLanguage();
   const { currentOrgId, user } = useAuth();
   const { showError } = useToast();
   const [data, setData] = useState<AIInsights | null>(null);
@@ -27,7 +29,7 @@ export default function AIInsightsPage() {
 
   if (loading || !data) {
     return (
-      <OrgWorkspaceLayout title="ข้อมูลเชิงลึก AI">
+      <OrgWorkspaceLayout title={t('nav.ai-insights')}>
         <LoadingState card />
       </OrgWorkspaceLayout>
     );
@@ -41,9 +43,9 @@ export default function AIInsightsPage() {
   ];
 
   return (
-    <OrgWorkspaceLayout title="ข้อมูลเชิงลึก AI">
+    <OrgWorkspaceLayout title={t('nav.ai-insights')}>
       <PageHeader
-        title="ข้อมูลเชิงลึก AI"
+        title={t('nav.ai-insights')}
         subtitle="สรุปพฤติกรรมการตัดสินใจของ Planner เทียบกับคำแนะนำจาก AHP"
         actions={
           canExport ? (

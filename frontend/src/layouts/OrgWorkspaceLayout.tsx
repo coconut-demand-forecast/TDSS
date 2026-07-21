@@ -1,12 +1,15 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useSystemSettings } from '../hooks/useSystemSettings';
+import { LanguageToggle } from '../components/ui';
 import { notificationsApi, type Notification } from '../api';
 import { ORG_NAV } from './navConfig';
 
 export default function OrgWorkspaceLayout({ title, headerExtra, children }: { title: string; headerExtra?: ReactNode; children: ReactNode }) {
   const { user, currentOrgId, setCurrentOrgId, logout } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const systemSettings = useSystemSettings();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -88,17 +91,20 @@ export default function OrgWorkspaceLayout({ title, headerExtra, children }: { t
                 fontWeight: isActive ? 600 : 500,
               })}
             >
-              {item.label}
+              {t(`nav.${item.key}`)}
             </NavLink>
           ))}
         </nav>
 
+        <div style={{ padding: '0 16px 10px' }}>
+          <LanguageToggle dark />
+        </div>
         <div style={{ padding: 10, borderTop: '1px solid rgba(255,255,255,.08)' }}>
           <button
             onClick={doLogout}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, border: 'none', background: 'transparent', color: 'rgba(255,255,255,.6)', fontSize: 12.5, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}
           >
-            ออกจากระบบ
+            {t('common.logout')}
           </button>
         </div>
       </aside>
@@ -120,9 +126,9 @@ export default function OrgWorkspaceLayout({ title, headerExtra, children }: { t
               </button>
               {showNotifications && (
                 <div style={{ position: 'absolute', top: 44, right: 0, width: 320, background: '#fff', border: '1px solid var(--c-border)', borderRadius: 12, boxShadow: '0 12px 28px rgba(0,0,0,.14)', zIndex: 50, overflow: 'hidden' }}>
-                  <div style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, borderBottom: '1px solid #f0f0f0' }}>การแจ้งเตือน</div>
+                  <div style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, borderBottom: '1px solid #f0f0f0' }}>{t('common.notifications')}</div>
                   <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-                    {notifications.length === 0 && <div style={{ padding: 16, fontSize: 12.5, color: 'var(--c-text-faint)' }}>ไม่มีการแจ้งเตือน</div>}
+                    {notifications.length === 0 && <div style={{ padding: 16, fontSize: 12.5, color: 'var(--c-text-faint)' }}>{t('common.noNotifications')}</div>}
                     {notifications.map((n) => (
                       <div key={n.id} style={{ padding: '11px 16px', borderTop: '1px solid #f5f5f5', fontSize: 12.5, background: n.is_read ? 'transparent' : '#fef2f2' }}>
                         <div>{n.message}</div>
@@ -146,10 +152,10 @@ export default function OrgWorkspaceLayout({ title, headerExtra, children }: { t
               {showProfileMenu && (
                 <div style={{ position: 'absolute', top: 44, right: 0, width: 180, background: '#fff', border: '1px solid var(--c-border)', borderRadius: 12, boxShadow: '0 12px 28px rgba(0,0,0,.14)', zIndex: 50, overflow: 'hidden' }}>
                   <button onClick={() => { setShowProfileMenu(false); navigate('/tdss/profile'); }} style={{ width: '100%', textAlign: 'left', padding: '11px 16px', border: 'none', background: '#fff', fontSize: 12.5, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    โปรไฟล์ของฉัน
+                    {t('common.myProfile')}
                   </button>
                   <button onClick={doLogout} style={{ width: '100%', textAlign: 'left', padding: '11px 16px', border: 'none', background: '#fff', color: 'var(--c-accent)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'inherit', borderTop: '1px solid #f5f5f5' }}>
-                    ออกจากระบบ
+                    {t('common.logout')}
                   </button>
                 </div>
               )}
