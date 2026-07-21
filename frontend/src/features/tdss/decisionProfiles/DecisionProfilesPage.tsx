@@ -5,6 +5,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { profilesApi, type DecisionProfile } from '../../../api';
 import { CRITERIA_LABELS, buildMatrix, calculateWeights, matrixToPairwise, upperTrianglePairs, pairKey } from './ahpClient';
+import { PROFILE_TEMPLATES, type ProfileTemplate } from './templates';
 
 const SAATY_OPTIONS = [
   { value: 1 / 9, label: '1/9 — ตัวหลังสำคัญกว่ามากที่สุด' },
@@ -31,6 +32,8 @@ export default function DecisionProfilesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingProfile, setEditingProfile] = useState<DecisionProfile | null>(null);
+  const [step, setStep] = useState<'template' | 'form'>('template');
+  const [templateKey, setTemplateKey] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [pairwise, setPairwise] = useState<Record<string, number>>(EMPTY_PAIRWISE);
@@ -66,6 +69,8 @@ export default function DecisionProfilesPage() {
     setName('');
     setDescription('');
     setPairwise(EMPTY_PAIRWISE());
+    setTemplateKey(null);
+    setStep('template');
     setShowForm(true);
   };
 
@@ -74,8 +79,24 @@ export default function DecisionProfilesPage() {
     setName(p.name);
     setDescription(p.description ?? '');
     setPairwise(matrixToPairwise(p.pairwise_matrix));
+    setTemplateKey('custom');
+    setStep('form');
     setShowForm(true);
   };
+
+  const selectTemplate = (t: ProfileTemplate) => {
+    setTemplateKey(t.key);
+    if (t.key === 'custom') {
+      setPairwise(EMPTY_PAIRWISE());
+    } else {
+      setPairwise(t.pairwise!);
+      setName(t.label);
+      setDescription(t.description);
+    }
+    setStep('form');
+  };
+
+  const isCustom = templateKey === 'custom';
 
   const submit = async () => {
     if (!currentOrgId) return;
@@ -83,12 +104,16 @@ export default function DecisionProfilesPage() {
       showError('กรุณากรอกชื่อโปรไฟล์');
       return;
     }
+    if (isCustom && !preview.isConsistent) {
+      showError(`ค่าความสอดคล้องไม่ผ่านเกณฑ์ (CR = ${preview.cr.toFixed(3)} > 0.10) — กรุณาปรับค่าเปรียบเทียบก่อนบันทึก`);
+      return;
+    }
     setSaving(true);
     try {
-      const payload = { name, description: description || undefined, pairwise, save_as_draft_if_inconsistent: true };
-      const result = editingProfile ? await profilesApi.update(currentOrgId, editingProfile.id, payload) : await profilesApi.create(currentOrgId, payload);
-      if (result.is_consistent) showSuccess(editingProfile ? 'แก้ไขโปรไฟล์สำเร็จ และผ่านเกณฑ์ความสอดคล้อง (CR ≤ 0.10)' : 'สร้างโปรไฟล์สำเร็จ และผ่านเกณฑ์ความสอดคล้อง (CR ≤ 0.10)');
-      else showError(`บันทึกสำเร็จ แต่เป็นฉบับร่าง (CR = ${result.cr.toFixed(3)} > 0.10) — โปรดปรับค่าการเปรียบเทียบก่อนใช้งานจริง`);
+      const payload = { name, description: description || undefined, pairwise, save_as_draft_if_inconsistent: false };
+      if (editingProfile) await profilesApi.update(currentOrgId, editingProfile.id, payload);
+      else await profilesApi.create(currentOrgId, payload);
+      showSuccess(editingProfile ? 'แก้ไขโปรไฟล์สำเร็จ' : 'สร้างโปรไฟล์สำเร็จ พร้อมใช้งานทันที');
       setShowForm(false);
       await load();
     } catch (e: unknown) {
@@ -190,7 +215,37 @@ export default function DecisionProfilesPage() {
         </div>
       )}
 
-      {showForm && (
+      {showForm && step === 'template' && (
+        <Dialog title="เลือกรูปแบบโปรไฟล์การตัดสินใจ" onClose={() => setShowForm(false)} width={720}>
+          <div style={{ fontSize: 12.5, color: 'var(--c-text-muted)', marginBottom: 16 }}>
+            เลือกโปรไฟล์สำเร็จรูป (คำนวณน้ำหนักและผ่านเกณฑ์ความสอดคล้องไว้ล่วงหน้าแล้ว) หรือกำหนดเองแบบละเอียด
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+            {PROFILE_TEMPLATES.map((t) => (
+              <div
+                key={t.key}
+                onClick={() => selectTemplate(t)}
+                style={{
+                  border: '1.5px solid var(--c-border)',
+                  borderRadius: 10,
+                  padding: 14,
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{t.label}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--c-text-muted)', lineHeight: 1.5 }}>{t.description}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+            <Button variant="secondary" onClick={() => setShowForm(false)}>
+              ยกเลิก
+            </Button>
+          </div>
+        </Dialog>
+      )}
+
+      {showForm && step === 'form' && (
         <Dialog title={editingProfile ? `แก้ไขโปรไฟล์ — ${editingProfile.name}` : 'สร้างโปรไฟล์การตัดสินใจใหม่'} onClose={() => setShowForm(false)} width={720}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 18 }}>
             <Field label="ชื่อโปรไฟล์" required>
@@ -201,34 +256,47 @@ export default function DecisionProfilesPage() {
             </Field>
           </div>
 
-          <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 4 }}>เปรียบเทียบความสำคัญของเกณฑ์ (Saaty scale 1-9)</div>
-          <div style={{ fontSize: 12, color: 'var(--c-text-muted)', marginBottom: 14 }}>สำหรับแต่ละคู่ เลือกว่าเกณฑ์ใดสำคัญกว่าและมากน้อยเพียงใด</div>
+          {isCustom ? (
+            <>
+              <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 4 }}>เปรียบเทียบความสำคัญของเกณฑ์ (Saaty scale 1-9)</div>
+              <div style={{ fontSize: 12, color: 'var(--c-text-muted)', marginBottom: 14 }}>สำหรับแต่ละคู่ เลือกว่าเกณฑ์ใดสำคัญกว่าและมากน้อยเพียงใด</div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-            {upperTrianglePairs().map(([a, b]) => {
-              const key = pairKey(a, b);
-              return (
-                <div key={key} style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 1fr', gap: 10, alignItems: 'center', fontSize: 12.5 }}>
-                  <div style={{ textAlign: 'right', fontWeight: 600 }}>{CRITERIA_LABELS[a]}</div>
-                  <select
-                    value={pairwise[key]}
-                    onChange={(e) => setPairwise({ ...pairwise, [key]: Number(e.target.value) })}
-                    style={{ padding: '7px 9px', borderRadius: 8, border: '1px solid var(--c-border)', fontFamily: 'inherit', fontSize: 12 }}
-                  >
-                    {SAATY_OPTIONS.map((o) => (
-                      <option key={o.label} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                  <div style={{ fontWeight: 600 }}>{CRITERIA_LABELS[b]}</div>
-                </div>
-              );
-            })}
-          </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                {upperTrianglePairs().map(([a, b]) => {
+                  const key = pairKey(a, b);
+                  return (
+                    <div key={key} style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 1fr', gap: 10, alignItems: 'center', fontSize: 12.5 }}>
+                      <div style={{ textAlign: 'right', fontWeight: 600 }}>{CRITERIA_LABELS[a]}</div>
+                      <select
+                        value={pairwise[key]}
+                        onChange={(e) => setPairwise({ ...pairwise, [key]: Number(e.target.value) })}
+                        style={{ padding: '7px 9px', borderRadius: 8, border: '1px solid var(--c-border)', fontFamily: 'inherit', fontSize: 12 }}
+                      >
+                        {SAATY_OPTIONS.map((o) => (
+                          <option key={o.label} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div style={{ fontWeight: 600 }}>{CRITERIA_LABELS[b]}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: 12, color: 'var(--c-text-muted)', marginBottom: 14 }}>
+              ใช้ Pairwise Matrix ที่กำหนดไว้ล่วงหน้าสำหรับโปรไฟล์นี้ — ไม่ต้องกรอกเปรียบเทียบเอง{' '}
+              <span style={{ color: 'var(--c-accent)', cursor: 'pointer', fontWeight: 600 }} onClick={() => setTemplateKey('custom')}>
+                แก้ไขค่าเปรียบเทียบเอง →
+              </span>
+            </div>
+          )}
 
           <Card style={{ background: '#f6f7f8', border: 'none' }}>
-            <div style={{ fontWeight: 700, fontSize: 12.5, marginBottom: 10 }}>น้ำหนักที่คำนวณได้ (คำนวณใหม่ทันทีเมื่อเปลี่ยนค่า)</div>
+            <div style={{ fontWeight: 700, fontSize: 12.5, marginBottom: 10 }}>
+              น้ำหนักที่คำนวณได้ {isCustom && '(คำนวณใหม่ทันทีเมื่อเปลี่ยนค่า)'}
+            </div>
             {Object.entries(preview.weights).map(([k, w]) => (
               <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
                 <span>{CRITERIA_LABELS[k]}</span>
@@ -236,17 +304,26 @@ export default function DecisionProfilesPage() {
               </div>
             ))}
             <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: preview.isConsistent ? '#166534' : '#991b1b' }}>
-              CR = {preview.cr.toFixed(3)} {preview.isConsistent ? '✓ สอดคล้อง (≤ 0.10)' : '✗ ไม่สอดคล้อง (> 0.10) — จะถูกบันทึกเป็นฉบับร่าง'}
+              CR = {preview.cr.toFixed(3)} {preview.isConsistent ? '✓ สอดคล้อง (≤ 0.10)' : '✗ ไม่สอดคล้อง (> 0.10) — ต้องปรับก่อนบันทึก'}
             </div>
           </Card>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
-            <Button variant="secondary" onClick={() => setShowForm(false)}>
-              ยกเลิก
-            </Button>
-            <Button onClick={submit} loading={saving}>
-              {editingProfile ? 'บันทึกการแก้ไข' : 'บันทึกโปรไฟล์'}
-            </Button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 20 }}>
+            <div>
+              {!editingProfile && (
+                <Button variant="ghost" onClick={() => setStep('template')}>
+                  ← เลือกรูปแบบใหม่
+                </Button>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Button variant="secondary" onClick={() => setShowForm(false)}>
+                ยกเลิก
+              </Button>
+              <Button onClick={submit} loading={saving} disabled={isCustom && !preview.isConsistent}>
+                {editingProfile ? 'บันทึกการแก้ไข' : 'บันทึกโปรไฟล์'}
+              </Button>
+            </div>
           </div>
         </Dialog>
       )}
