@@ -159,10 +159,15 @@ class VehicleBase(BaseModel):
     capacity_weight_kg: float = Field(gt=0)
     capacity_volume_m3: float = Field(gt=0)
     fuel_type: str | None = None
-    fuel_consumption_km_per_liter: float | None = None
-    cost_per_km: float = Field(ge=0)
+    fuel_consumption_km_per_liter: float | None = Field(default=None, gt=0)
+    fuel_cost_per_unit: float | None = Field(default=None, gt=0)
+    # Defaulted (not strictly required): once fuel_type + consumption + fuel
+    # cost are all present, these legacy flat-rate fields are unused by
+    # scoring (see scoring_service.fuel_based_transport_calc) — they remain
+    # the fallback source of truth only when fuel data is absent/incomplete.
+    cost_per_km: float = Field(ge=0, default=0)
     fixed_cost: float = Field(ge=0, default=0)
-    co2_factor: float = Field(ge=0)
+    co2_factor: float = Field(ge=0, default=0)
 
 
 class VehicleCreateRequest(VehicleBase):

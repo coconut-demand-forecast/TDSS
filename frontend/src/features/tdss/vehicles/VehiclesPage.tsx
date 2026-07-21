@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
-import { Button, Card, Dialog, EmptyState, Field, Input, LoadingState, PageHeader, StatusBadge, Table, Td, Th } from '../../../components/ui';
+import { Button, Card, Dialog, EmptyState, Field, Input, LoadingState, PageHeader, Select, StatusBadge, Table, Td, Th } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { vehiclesApi, type Vehicle } from '../../../api';
+import { FUEL_SPECS, FUEL_TYPE_OPTIONS } from './fuelReference';
 
 const EMPTY_FORM = {
   vehicle_code: '',
@@ -13,6 +14,7 @@ const EMPTY_FORM = {
   capacity_volume_m3: '',
   fuel_type: '',
   fuel_consumption_km_per_liter: '',
+  fuel_cost_per_unit: '',
   cost_per_km: '',
   fixed_cost: '0',
   co2_factor: '',
@@ -31,6 +33,7 @@ export default function VehiclesPage() {
 
   const membership = user?.memberships.find((m) => m.organization_id === currentOrgId);
   const canWrite = user?.is_system_owner || membership?.role === 'org_admin' || membership?.role === 'planner';
+  const selectedFuelSpec = form.fuel_type ? FUEL_SPECS[form.fuel_type] : undefined;
 
   const load = async () => {
     if (!currentOrgId) return;
@@ -65,6 +68,7 @@ export default function VehiclesPage() {
       capacity_volume_m3: String(v.capacity_volume_m3),
       fuel_type: v.fuel_type ?? '',
       fuel_consumption_km_per_liter: v.fuel_consumption_km_per_liter != null ? String(v.fuel_consumption_km_per_liter) : '',
+      fuel_cost_per_unit: v.fuel_cost_per_unit != null ? String(v.fuel_cost_per_unit) : '',
       cost_per_km: String(v.cost_per_km),
       fixed_cost: String(v.fixed_cost),
       co2_factor: String(v.co2_factor),
@@ -74,8 +78,17 @@ export default function VehiclesPage() {
 
   const submit = async () => {
     if (!currentOrgId) return;
-    if (!form.vehicle_code || !form.registration_number || !form.vehicle_type || !form.capacity_weight_kg || !form.capacity_volume_m3 || !form.cost_per_km || !form.co2_factor) {
+    if (!form.vehicle_code || !form.registration_number || !form.vehicle_type || !form.capacity_weight_kg || !form.capacity_volume_m3) {
       showError('กรุณากรอกข้อมูลที่จำเป็นให้ครบ (มีเครื่องหมาย *)');
+      return;
+    }
+    if (selectedFuelSpec) {
+      if (!form.fuel_consumption_km_per_liter || !form.fuel_cost_per_unit) {
+        showError('เมื่อเลือกประเภทเชื้อเพลิงแล้ว กรุณากรอกอัตราสิ้นเปลืองและราคาเชื้อเพลิงให้ครบ');
+        return;
+      }
+    } else if (!form.cost_per_km || !form.co2_factor) {
+      showError('กรุณากรอกต้นทุนต่อกิโลเมตรและค่าสัมประสิทธิ์ CO2 (หรือเลือกประเภทเชื้อเพลิงแทน)');
       return;
     }
     setSaving(true);
@@ -88,6 +101,7 @@ export default function VehiclesPage() {
         capacity_volume_m3: Number(form.capacity_volume_m3),
         fuel_type: form.fuel_type || undefined,
         fuel_consumption_km_per_liter: form.fuel_consumption_km_per_liter ? Number(form.fuel_consumption_km_per_liter) : undefined,
+        fuel_cost_per_unit: form.fuel_cost_per_unit ? Number(form.fuel_cost_per_unit) : undefined,
         cost_per_km: Number(form.cost_per_km),
         fixed_cost: Number(form.fixed_cost || 0),
         co2_factor: Number(form.co2_factor),
@@ -197,7 +211,14 @@ export default function VehiclesPage() {
               <Input value={form.vehicle_type} onChange={(e) => setForm({ ...form, vehicle_type: e.target.value })} placeholder="เช่น รถบรรทุก 6 ล้อ" />
             </Field>
             <Field label="ประเภทเชื้อเพลิง">
-              <Input value={form.fuel_type} onChange={(e) => setForm({ ...form, fuel_type: e.target.value })} />
+              <Select value={form.fuel_type} onChange={(e) => setForm({ ...form, fuel_type: e.target.value })}>
+                <option value="">ไม่ระบุ (ใช้ต้นทุน/CO2 แบบกำหนดเอง)</option>
+                {FUEL_TYPE_OPTIONS.map((f) => (
+                  <option key={f.key} value={f.key}>
+                    {f.labelTh}
+                  </option>
+                ))}
+              </Select>
             </Field>
             <Field label="ความจุน้ำหนัก (กก.)" required>
               <Input type="number" value={form.capacity_weight_kg} onChange={(e) => setForm({ ...form, capacity_weight_kg: e.target.value })} />
@@ -205,16 +226,24 @@ export default function VehiclesPage() {
             <Field label="ความจุปริมาตร (ลบ.ม.)" required>
               <Input type="number" value={form.capacity_volume_m3} onChange={(e) => setForm({ ...form, capacity_volume_m3: e.target.value })} />
             </Field>
-            <Field label="อัตราสิ้นเปลือง (กม./ลิตร)">
+            <Field label={`อัตราสิ้นเปลือง (กม./${selectedFuelSpec?.unitLabel ?? 'หน่วย'})`}>
               <Input type="number" value={form.fuel_consumption_km_per_liter} onChange={(e) => setForm({ ...form, fuel_consumption_km_per_liter: e.target.value })} />
             </Field>
-            <Field label="ต้นทุนต่อกิโลเมตร (บาท)" required>
+            <Field label={`ราคาเชื้อเพลิง (บาท/${selectedFuelSpec?.unitLabel ?? 'หน่วย'})`}>
+              <Input type="number" value={form.fuel_cost_per_unit} onChange={(e) => setForm({ ...form, fuel_cost_per_unit: e.target.value })} />
+            </Field>
+            {selectedFuelSpec && (
+              <div style={{ gridColumn: '1 / -1', fontSize: 12, color: 'var(--c-text-muted)', background: '#f6f7f8', borderRadius: 8, padding: '8px 12px' }}>
+                Emission Factor ({selectedFuelSpec.labelTh}): <strong>{selectedFuelSpec.kgCo2PerUnit} kgCO2 / {selectedFuelSpec.unitLabel}</strong> — ค่ามาตรฐานภายในระบบ ไม่สามารถแก้ไขเอง
+              </div>
+            )}
+            <Field label="ต้นทุนต่อกิโลเมตร (บาท)" required={!selectedFuelSpec}>
               <Input type="number" value={form.cost_per_km} onChange={(e) => setForm({ ...form, cost_per_km: e.target.value })} />
             </Field>
             <Field label="ต้นทุนคงที่ (บาท)">
               <Input type="number" value={form.fixed_cost} onChange={(e) => setForm({ ...form, fixed_cost: e.target.value })} />
             </Field>
-            <Field label="ค่าสัมประสิทธิ์ CO2 (กก./กม.)" required>
+            <Field label="ค่าสัมประสิทธิ์ CO2 (กก./กม.)" required={!selectedFuelSpec}>
               <Input type="number" value={form.co2_factor} onChange={(e) => setForm({ ...form, co2_factor: e.target.value })} />
             </Field>
           </div>

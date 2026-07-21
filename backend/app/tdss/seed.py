@@ -86,7 +86,8 @@ def run_seed():
                 vehicle_type="รถบรรทุก 6 ล้อ",
                 capacity_weight_kg=5000,
                 capacity_volume_m3=20,
-                fuel_type="ดีเซล",
+                fuel_type="diesel",
+                fuel_cost_per_unit=32.0,  # baht/litre — representative value, entered manually (not a live price feed)
                 fuel_consumption_km_per_liter=8,
                 cost_per_km=15,
                 fixed_cost=500,
@@ -99,7 +100,8 @@ def run_seed():
                 vehicle_type="รถบรรทุก 10 ล้อ",
                 capacity_weight_kg=12000,
                 capacity_volume_m3=40,
-                fuel_type="ดีเซล",
+                fuel_type="diesel",
+                fuel_cost_per_unit=32.0,  # baht/litre — representative value, entered manually (not a live price feed)
                 fuel_consumption_km_per_liter=5,
                 cost_per_km=25,
                 fixed_cost=900,
@@ -112,7 +114,8 @@ def run_seed():
                 vehicle_type="รถกระบะ",
                 capacity_weight_kg=1500,
                 capacity_volume_m3=6,
-                fuel_type="ดีเซล",
+                fuel_type="diesel",
+                fuel_cost_per_unit=32.0,  # baht/litre — representative value, entered manually (not a live price feed)
                 fuel_consumption_km_per_liter=14,
                 cost_per_km=8,
                 fixed_cost=200,
@@ -125,7 +128,8 @@ def run_seed():
                 vehicle_type="รถหัวลาก",
                 capacity_weight_kg=25000,
                 capacity_volume_m3=60,
-                fuel_type="ดีเซล",
+                fuel_type="diesel",
+                fuel_cost_per_unit=32.0,  # baht/litre — representative value, entered manually (not a live price feed)
                 fuel_consumption_km_per_liter=3.5,
                 cost_per_km=35,
                 fixed_cost=1500,

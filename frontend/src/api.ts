@@ -49,6 +49,7 @@ export interface Vehicle {
   capacity_volume_m3: number;
   fuel_type: string | null;
   fuel_consumption_km_per_liter: number | null;
+  fuel_cost_per_unit: number | null;
   cost_per_km: number;
   fixed_cost: number;
   co2_factor: number;

@@ -131,7 +131,8 @@ class Vehicle(Base):
     capacity_weight_kg = Column(Float, nullable=False)
     capacity_volume_m3 = Column(Float, nullable=False)
     fuel_type = Column(String, nullable=True)
-    fuel_consumption_km_per_liter = Column(Float, nullable=True)
+    fuel_consumption_km_per_liter = Column(Float, nullable=True)  # distance per unit of fuel (unit depends on fuel_type — see fuel_reference.py)
+    fuel_cost_per_unit = Column(Float, nullable=True)  # price per unit of fuel (baht/litre, baht/kg, or baht/kWh depending on fuel_type)
     cost_per_km = Column(Float, nullable=False)
     fixed_cost = Column(Float, default=0.0, nullable=False)
     co2_factor = Column(Float, nullable=False)  # kg CO2 per km
