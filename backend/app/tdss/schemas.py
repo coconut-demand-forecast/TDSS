@@ -225,6 +225,39 @@ class RouteOut(RouteBase):
 
 
 # ---------------------------------------------------------------------------
+# Product Master
+# ---------------------------------------------------------------------------
+class ProductBase(BaseModel):
+    sku: str = Field(min_length=1)
+    product_name: str = Field(min_length=1)
+    unit: str = Field(min_length=1)
+    weight_per_unit_kg: float = Field(gt=0)
+    width_cm: float = Field(gt=0)
+    length_cm: float = Field(gt=0)
+    height_cm: float = Field(gt=0)
+
+
+class ProductCreateRequest(ProductBase):
+    pass
+
+
+class ProductUpdateRequest(ProductBase):
+    status: str | None = None
+
+
+class ProductOut(ProductBase):
+    id: int
+    organization_id: int
+    volume_per_unit_m3: float
+    status: str
+    created_at: dt.datetime
+    updated_at: dt.datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ---------------------------------------------------------------------------
 # Decision Profiles (AHP)
 # ---------------------------------------------------------------------------
 class DecisionProfileCreateRequest(BaseModel):
@@ -309,6 +342,36 @@ class JobOut(JobBase):
     created_by: int | None
     created_at: dt.datetime
     updated_at: dt.datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ---------------------------------------------------------------------------
+# Transport Job Items (product line items)
+# ---------------------------------------------------------------------------
+class JobItemCreateRequest(BaseModel):
+    product_id: int
+    quantity: float = Field(gt=0)
+
+
+class JobItemUpdateRequest(BaseModel):
+    quantity: float = Field(gt=0)
+
+
+class JobItemOut(BaseModel):
+    id: int
+    job_id: int
+    product_id: int
+    quantity: float
+    weight_per_unit_kg: float
+    volume_per_unit_m3: float
+    total_weight_kg: float
+    total_volume_m3: float
+    sku: str
+    product_name: str
+    unit: str
+    created_at: dt.datetime
 
     class Config:
         from_attributes = True

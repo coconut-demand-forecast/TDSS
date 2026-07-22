@@ -7,6 +7,7 @@ import { ProtectedRoute, OwnerRoute, AdminRoute } from './components/ProtectedRo
 import LoginPage from './features/tdss/auth/LoginPage';
 import DashboardPage from './features/tdss/dashboard/DashboardPage';
 import VehiclesPage from './features/tdss/vehicles/VehiclesPage';
+import ProductsPage from './features/tdss/products/ProductsPage';
 import RoutesPage from './features/tdss/routes/RoutesPage';
 import DecisionProfilesPage from './features/tdss/decisionProfiles/DecisionProfilesPage';
 import JobsPage from './features/tdss/jobs/JobsPage';
@@ -58,6 +59,7 @@ export default function App() {
             <Route path="/tdss/jobs/:jobId/planning" element={<ProtectedRoute><PlanningWizardPage /></ProtectedRoute>} />
             <Route path="/tdss/recommendations/:runId" element={<ProtectedRoute><RecommendationResultPage /></ProtectedRoute>} />
             <Route path="/tdss/vehicles" element={<ProtectedRoute><VehiclesPage /></ProtectedRoute>} />
+            <Route path="/tdss/products" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
             <Route path="/tdss/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
             <Route path="/tdss/decision-profiles" element={<ProtectedRoute><DecisionProfilesPage /></ProtectedRoute>} />
             <Route path="/tdss/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />

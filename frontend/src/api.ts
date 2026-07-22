@@ -76,6 +76,37 @@ export interface Route {
   updated_at: string;
 }
 
+export interface Product {
+  id: number;
+  organization_id: number;
+  sku: string;
+  product_name: string;
+  unit: string;
+  weight_per_unit_kg: number;
+  width_cm: number;
+  length_cm: number;
+  height_cm: number;
+  volume_per_unit_m3: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TransportJobItem {
+  id: number;
+  job_id: number;
+  product_id: number;
+  quantity: number;
+  weight_per_unit_kg: number;
+  volume_per_unit_m3: number;
+  total_weight_kg: number;
+  total_volume_m3: number;
+  sku: string;
+  product_name: string;
+  unit: string;
+  created_at: string;
+}
+
 export interface DecisionProfile {
   id: number;
   organization_id: number;
@@ -338,6 +369,33 @@ export const routesApi = {
   activate: (orgId: number, id: number) => api.post<Route>(`/api/tdss/organizations/${orgId}/routes/${id}/activate`).then((r) => r.data),
   deactivate: (orgId: number, id: number) => api.post<Route>(`/api/tdss/organizations/${orgId}/routes/${id}/deactivate`).then((r) => r.data),
   remove: (orgId: number, id: number) => api.delete(`/api/tdss/organizations/${orgId}/routes/${id}`),
+};
+
+// ---------------------------------------------------------------------------
+// Product Master
+// ---------------------------------------------------------------------------
+export const productsApi = {
+  list: (orgId: number, params?: { search?: string; status?: string }) =>
+    api.get<Product[]>(`/api/tdss/organizations/${orgId}/products`, { params }).then((r) => r.data),
+  create: (orgId: number, data: Partial<Product>) => api.post<Product>(`/api/tdss/organizations/${orgId}/products`, data).then((r) => r.data),
+  update: (orgId: number, id: number, data: Partial<Product>) =>
+    api.put<Product>(`/api/tdss/organizations/${orgId}/products/${id}`, data).then((r) => r.data),
+  activate: (orgId: number, id: number) => api.post<Product>(`/api/tdss/organizations/${orgId}/products/${id}/activate`).then((r) => r.data),
+  deactivate: (orgId: number, id: number) => api.post<Product>(`/api/tdss/organizations/${orgId}/products/${id}/deactivate`).then((r) => r.data),
+  remove: (orgId: number, id: number) => api.delete(`/api/tdss/organizations/${orgId}/products/${id}`),
+};
+
+// ---------------------------------------------------------------------------
+// Transport Job Items (product line items on a job)
+// ---------------------------------------------------------------------------
+export const jobItemsApi = {
+  list: (orgId: number, jobId: number) =>
+    api.get<TransportJobItem[]>(`/api/tdss/organizations/${orgId}/jobs/${jobId}/items`).then((r) => r.data),
+  add: (orgId: number, jobId: number, data: { product_id: number; quantity: number }) =>
+    api.post<TransportJobItem>(`/api/tdss/organizations/${orgId}/jobs/${jobId}/items`, data).then((r) => r.data),
+  update: (orgId: number, jobId: number, itemId: number, data: { quantity: number }) =>
+    api.put<TransportJobItem>(`/api/tdss/organizations/${orgId}/jobs/${jobId}/items/${itemId}`, data).then((r) => r.data),
+  remove: (orgId: number, jobId: number, itemId: number) => api.delete(`/api/tdss/organizations/${orgId}/jobs/${jobId}/items/${itemId}`),
 };
 
 // ---------------------------------------------------------------------------

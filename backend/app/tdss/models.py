@@ -161,6 +161,29 @@ class Route(Base):
     updated_at = Column(DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
 
 
+class Product(Base):
+    """Product Master — one canonical catalog per organization. Referenced
+    by TransportJobItem, which snapshots weight/volume at the time an item
+    is added so historical job totals stay stable even if this record is
+    edited later (see TransportJobItem below)."""
+
+    __tablename__ = "tdss_products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(Integer, ForeignKey("tdss_organizations.id"), nullable=False, index=True)
+    sku = Column(String, nullable=False)
+    product_name = Column(String, nullable=False)
+    unit = Column(String, nullable=False)  # หน่วยนับ, e.g. "ชิ้น", "กล่อง", "พาเลท"
+    weight_per_unit_kg = Column(Float, nullable=False)
+    width_cm = Column(Float, nullable=False)
+    length_cm = Column(Float, nullable=False)
+    height_cm = Column(Float, nullable=False)
+    volume_per_unit_m3 = Column(Float, nullable=False)  # server-computed = width*length*height / 1,000,000 — see products_router.py
+    status = Column(String, default="active", nullable=False)  # active | inactive
+    created_at = Column(DateTime, default=dt.datetime.utcnow)
+    updated_at = Column(DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
+
+
 class DecisionProfile(Base):
     __tablename__ = "tdss_decision_profiles"
 
@@ -200,6 +223,30 @@ class TransportJob(Base):
     created_by = Column(Integer, ForeignKey("tdss_users.id"), nullable=True)
     created_at = Column(DateTime, default=dt.datetime.utcnow)
     updated_at = Column(DateTime, default=dt.datetime.utcnow, onupdate=dt.datetime.utcnow)
+
+
+class TransportJobItem(Base):
+    """A line item (product + quantity) attached to a TransportJob. Adding,
+    editing, or deleting a row here causes jobs_router / job_items_router
+    to recompute and overwrite the parent job's shipment_weight_kg /
+    shipment_volume_m3 — those two columns remain the ONLY interface
+    rule_engine.py / scoring_service.py read, so neither file (nor AHP,
+    nor the AI/Random Forest pipeline) needed any change for this feature.
+
+    weight_per_unit_kg / volume_per_unit_m3 are a snapshot of the Product's
+    values at the moment this item was added, not a live reference — so a
+    job's committed totals never silently change if someone edits the
+    Product Master later."""
+
+    __tablename__ = "tdss_job_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("tdss_transport_jobs.id"), nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("tdss_products.id"), nullable=False)
+    quantity = Column(Float, nullable=False)
+    weight_per_unit_kg = Column(Float, nullable=False)
+    volume_per_unit_m3 = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=dt.datetime.utcnow)
 
 
 class RecommendationRun(Base):

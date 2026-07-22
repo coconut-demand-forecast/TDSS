@@ -10,11 +10,13 @@ from app.tdss.routers import (
     auth_router,
     dashboard_router,
     decision_profiles_router,
+    job_items_router,
     jobs_router,
     notifications_router,
     organizations_router,
     owner_router,
     planning_router,
+    products_router,
     reports_router,
     routes_router,
     system_settings_router,
@@ -38,8 +40,10 @@ app.include_router(auth_router.router)
 app.include_router(organizations_router.router)
 app.include_router(vehicles_router.router)
 app.include_router(routes_router.router)
+app.include_router(products_router.router)
 app.include_router(decision_profiles_router.router)
 app.include_router(jobs_router.router)
+app.include_router(job_items_router.router)
 app.include_router(planning_router.router)
 app.include_router(dashboard_router.router)
 app.include_router(reports_router.router)

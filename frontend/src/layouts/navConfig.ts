@@ -9,6 +9,7 @@ export const ORG_NAV: NavItem[] = [
   { key: 'dashboard', label: 'แดชบอร์ด', to: '/tdss/dashboard', roles: ['org_admin', 'planner', 'viewer'] },
   { key: 'jobs', label: 'งานขนส่ง', to: '/tdss/jobs', roles: ['org_admin', 'planner', 'viewer'] },
   { key: 'vehicles', label: 'ยานพาหนะ', to: '/tdss/vehicles', roles: ['org_admin', 'planner', 'viewer'] },
+  { key: 'products', label: 'ข้อมูลสินค้า (Product Master)', to: '/tdss/products', roles: ['org_admin', 'planner', 'viewer'] },
   { key: 'routes', label: 'เส้นทาง', to: '/tdss/routes', roles: ['org_admin', 'planner', 'viewer'] },
   { key: 'decision-profiles', label: 'โปรไฟล์การตัดสินใจ (AHP)', to: '/tdss/decision-profiles', roles: ['org_admin', 'planner', 'viewer'] },
   { key: 'reports', label: 'รายงาน', to: '/tdss/reports', roles: ['org_admin', 'planner', 'viewer'] },

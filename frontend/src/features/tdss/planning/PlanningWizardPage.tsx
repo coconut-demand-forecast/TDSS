@@ -1,13 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
-import { Button, Card, Field, Input, LoadingState, StatusBadge, TextArea } from '../../../components/ui';
+import { Button, Card, Field, Input, LoadingState, StatusBadge, Table, Td, Th, TextArea } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
-import { jobsApi, organizationsApi, planningApi, profilesApi, routesApi, vehiclesApi, type DecisionProfile, type Route, type TransportJob, type Vehicle } from '../../../api';
+import {
+  jobItemsApi,
+  jobsApi,
+  organizationsApi,
+  planningApi,
+  productsApi,
+  profilesApi,
+  routesApi,
+  vehiclesApi,
+  type DecisionProfile,
+  type Product,
+  type Route,
+  type TransportJob,
+  type TransportJobItem,
+  type Vehicle,
+} from '../../../api';
 import { CRITERIA_LABELS } from '../decisionProfiles/ahpClient';
 
-const STEPS = ['ความต้องการสินค้า', 'เลือกเส้นทาง', 'เลือกยานพาหนะ', 'โปรไฟล์การตัดสินใจ', 'ตรวจสอบและยืนยัน'];
+const STEPS = ['ความต้องการสินค้า', 'รายการสินค้า', 'เลือกเส้นทาง', 'เลือกยานพาหนะ', 'โปรไฟล์การตัดสินใจ', 'ตรวจสอบและยืนยัน'];
 
 interface DraftState {
   origin: string;
@@ -32,6 +47,8 @@ export default function PlanningWizardPage() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [profiles, setProfiles] = useState<DecisionProfile[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [items, setItems] = useState<TransportJobItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0);
   const [generating, setGenerating] = useState(false);
@@ -47,21 +64,44 @@ export default function PlanningWizardPage() {
     profileId: null,
   });
 
+  // Product Items step (add/search) state — not persisted to localStorage,
+  // items live server-side as soon as they're added (see jobItemsApi).
+  const [productSearch, setProductSearch] = useState('');
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const [quantityInput, setQuantityInput] = useState('');
+  const [addingItem, setAddingItem] = useState(false);
+
+  const reloadJobAndItems = async (orgId: number, id: number) => {
+    const [freshJob, freshItems] = await Promise.all([jobsApi.get(orgId, id), jobItemsApi.list(orgId, id)]);
+    setJob(freshJob);
+    setItems(freshItems);
+    setDraft((d) => ({
+      ...d,
+      shipment_weight_kg: freshJob.shipment_weight_kg ? String(freshJob.shipment_weight_kg) : '',
+      shipment_volume_m3: freshJob.shipment_volume_m3 ? String(freshJob.shipment_volume_m3) : '',
+    }));
+    return freshJob;
+  };
+
   useEffect(() => {
     if (!currentOrgId || !jobId) return;
     (async () => {
       setLoading(true);
       try {
-        const [j, r, v, p, orgSettings] = await Promise.all([
+        const [j, r, v, p, prod, jobItems, orgSettings] = await Promise.all([
           jobsApi.get(currentOrgId, Number(jobId)),
           routesApi.list(currentOrgId, { status: 'active' }),
           vehiclesApi.list(currentOrgId, { status: 'active' }),
           profilesApi.list(currentOrgId),
+          productsApi.list(currentOrgId, { status: 'active' }),
+          jobItemsApi.list(currentOrgId, Number(jobId)),
           organizationsApi.getSettings(currentOrgId).catch(() => null),
         ]);
         setJob(j);
         setRoutes(r);
         setVehicles(v);
+        setProducts(prod);
+        setItems(jobItems);
         const activeProfiles = p.filter((pr) => pr.status === 'active');
         setProfiles(activeProfiles);
 
@@ -104,18 +144,30 @@ export default function PlanningWizardPage() {
     return vehicles.filter((veh) => veh.capacity_weight_kg >= w && veh.capacity_volume_m3 >= v);
   }, [vehicles, draft.shipment_weight_kg, draft.shipment_volume_m3]);
 
+  const itemsSummary = useMemo(() => {
+    const skuCount = new Set(items.map((i) => i.product_id)).size;
+    const totalQuantity = items.reduce((sum, i) => sum + i.quantity, 0);
+    const totalWeight = items.reduce((sum, i) => sum + i.total_weight_kg, 0);
+    const totalVolume = items.reduce((sum, i) => sum + i.total_volume_m3, 0);
+    return { skuCount, totalQuantity, totalWeight: Math.round(totalWeight * 1000) / 1000, totalVolume: Math.round(totalVolume * 1_000_000) / 1_000_000 };
+  }, [items]);
+
+  const filteredProducts = useMemo(() => {
+    if (!productSearch) return [];
+    const q = productSearch.toLowerCase();
+    return products.filter((p) => p.sku.toLowerCase().includes(q) || p.product_name.toLowerCase().includes(q)).slice(0, 8);
+  }, [productSearch, products]);
+
   const saveRequirements = async () => {
     if (!currentOrgId || !job) return false;
-    if (!draft.origin || !draft.destination || !draft.shipment_weight_kg || !draft.shipment_volume_m3) {
-      showError('กรุณากรอกต้นทาง ปลายทาง น้ำหนัก และปริมาตรให้ครบ');
+    if (!draft.origin || !draft.destination) {
+      showError('กรุณากรอกต้นทางและปลายทาง');
       return false;
     }
     try {
       await jobsApi.update(currentOrgId, job.id, {
         origin: draft.origin,
         destination: draft.destination,
-        shipment_weight_kg: Number(draft.shipment_weight_kg),
-        shipment_volume_m3: Number(draft.shipment_volume_m3),
         required_delivery_datetime: draft.required_delivery_datetime ? new Date(draft.required_delivery_datetime).toISOString() : undefined,
         special_requirements: draft.special_requirements || undefined,
       });
@@ -126,20 +178,79 @@ export default function PlanningWizardPage() {
     }
   };
 
+  const saveManualWeightVolume = async () => {
+    if (!currentOrgId || !job) return false;
+    if (!(Number(draft.shipment_weight_kg) > 0) || !(Number(draft.shipment_volume_m3) > 0)) {
+      showError('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ หรือกรอกน้ำหนักและปริมาตรรวมเอง');
+      return false;
+    }
+    try {
+      await jobsApi.update(currentOrgId, job.id, {
+        shipment_weight_kg: Number(draft.shipment_weight_kg),
+        shipment_volume_m3: Number(draft.shipment_volume_m3),
+      });
+      return true;
+    } catch {
+      showError('บันทึกข้อมูลไม่สำเร็จ');
+      return false;
+    }
+  };
+
+  const addItem = async () => {
+    if (!currentOrgId || !job || !selectedProductId || !(Number(quantityInput) > 0)) {
+      showError('กรุณาเลือกสินค้าและกรอกจำนวนให้ถูกต้อง');
+      return;
+    }
+    setAddingItem(true);
+    try {
+      await jobItemsApi.add(currentOrgId, job.id, { product_id: selectedProductId, quantity: Number(quantityInput) });
+      await reloadJobAndItems(currentOrgId, job.id);
+      setProductSearch('');
+      setSelectedProductId(null);
+      setQuantityInput('');
+      showSuccess('เพิ่มรายการสินค้าแล้ว');
+    } catch (e: unknown) {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      showError(typeof detail === 'string' ? detail : 'เพิ่มรายการไม่สำเร็จ');
+    } finally {
+      setAddingItem(false);
+    }
+  };
+
+  const removeItem = async (itemId: number) => {
+    if (!currentOrgId || !job) return;
+    try {
+      await jobItemsApi.remove(currentOrgId, job.id, itemId);
+      await reloadJobAndItems(currentOrgId, job.id);
+      showSuccess('ลบรายการแล้ว');
+    } catch {
+      showError('ลบรายการไม่สำเร็จ');
+    }
+  };
+
   const next = async () => {
     if (step === 0) {
       const ok = await saveRequirements();
       if (!ok) return;
     }
-    if (step === 1 && draft.routeIds.length === 0) {
+    if (step === 1) {
+      if (items.length === 0) {
+        const ok = await saveManualWeightVolume();
+        if (!ok) return;
+      } else if (!(Number(draft.shipment_weight_kg) > 0) || !(Number(draft.shipment_volume_m3) > 0)) {
+        showError('น้ำหนัก/ปริมาตรรวมยังไม่ถูกต้อง');
+        return;
+      }
+    }
+    if (step === 2 && draft.routeIds.length === 0) {
       showError('กรุณาเลือกอย่างน้อย 1 เส้นทาง');
       return;
     }
-    if (step === 2 && draft.vehicleIds.length === 0) {
+    if (step === 3 && draft.vehicleIds.length === 0) {
       showError('กรุณาเลือกอย่างน้อย 1 ยานพาหนะ');
       return;
     }
-    if (step === 3 && !draft.profileId) {
+    if (step === 4 && !draft.profileId) {
       showError('กรุณาเลือกโปรไฟล์การตัดสินใจ');
       return;
     }
@@ -224,12 +335,6 @@ export default function PlanningWizardPage() {
             <Field label="ปลายทาง" required>
               <Input value={draft.destination} onChange={(e) => setDraft({ ...draft, destination: e.target.value })} />
             </Field>
-            <Field label="น้ำหนักสินค้า (กก.)" required>
-              <Input type="number" value={draft.shipment_weight_kg} onChange={(e) => setDraft({ ...draft, shipment_weight_kg: e.target.value })} />
-            </Field>
-            <Field label="ปริมาตรสินค้า (ลบ.ม.)" required>
-              <Input type="number" value={draft.shipment_volume_m3} onChange={(e) => setDraft({ ...draft, shipment_volume_m3: e.target.value })} />
-            </Field>
             <Field label="กำหนดส่งมอบ">
               <Input type="datetime-local" value={draft.required_delivery_datetime} onChange={(e) => setDraft({ ...draft, required_delivery_datetime: e.target.value })} />
             </Field>
@@ -243,6 +348,136 @@ export default function PlanningWizardPage() {
       )}
 
       {step === 1 && (
+        <Card>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>รายการสินค้า</div>
+          <div style={{ fontSize: 12, color: 'var(--c-text-muted)', marginBottom: 16 }}>
+            ค้นหาสินค้าจาก SKU หรือชื่อสินค้า เพิ่มได้หลายรายการ — ระบบจะดึงน้ำหนัก/ปริมาตรจาก Product Master และคำนวณยอดรวมให้อัตโนมัติ
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 8, position: 'relative' }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Field label="ค้นหาสินค้า (SKU / ชื่อสินค้า)">
+                <Input
+                  value={productSearch}
+                  onChange={(e) => {
+                    setProductSearch(e.target.value);
+                    setSelectedProductId(null);
+                  }}
+                  placeholder="พิมพ์ SKU หรือชื่อสินค้า..."
+                />
+              </Field>
+              {productSearch && !selectedProductId && filteredProducts.length > 0 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 10,
+                    background: '#fff',
+                    border: '1px solid var(--c-border)',
+                    borderRadius: 8,
+                    marginTop: 4,
+                    maxHeight: 220,
+                    overflowY: 'auto',
+                    boxShadow: '0 8px 20px rgba(0,0,0,.08)',
+                  }}
+                >
+                  {filteredProducts.map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => {
+                        setSelectedProductId(p.id);
+                        setProductSearch(`${p.sku} — ${p.product_name}`);
+                      }}
+                      style={{ padding: '8px 12px', fontSize: 12.5, cursor: 'pointer', borderBottom: '1px solid #f3f4f6' }}
+                    >
+                      <strong>{p.sku}</strong> — {p.product_name}{' '}
+                      <span style={{ color: 'var(--c-text-muted)' }}>
+                        ({p.weight_per_unit_kg} กก./{p.unit}, {p.volume_per_unit_m3.toLocaleString(undefined, { maximumFractionDigits: 4 })} ลบ.ม./{p.unit})
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div style={{ width: 120 }}>
+              <Field label="จำนวน">
+                <Input type="number" value={quantityInput} onChange={(e) => setQuantityInput(e.target.value)} />
+              </Field>
+            </div>
+            <Button onClick={addItem} loading={addingItem} disabled={!selectedProductId || !quantityInput}>
+              + เพิ่มรายการ
+            </Button>
+          </div>
+
+          {products.length === 0 && (
+            <div style={{ fontSize: 12, color: 'var(--c-text-faint)', marginBottom: 16 }}>
+              ยังไม่มีข้อมูลสินค้าในระบบ — ไปที่หน้า "ข้อมูลสินค้า (Product Master)" เพื่อเพิ่มก่อน หรือกรอกน้ำหนัก/ปริมาตรรวมเองด้านล่าง
+            </div>
+          )}
+
+          {items.length > 0 && (
+            <Card style={{ padding: 0, overflow: 'hidden', marginTop: 16, marginBottom: 16 }}>
+              <Table>
+                <thead>
+                  <tr>
+                    <Th>SKU</Th>
+                    <Th>ชื่อสินค้า</Th>
+                    <Th align="right">จำนวน</Th>
+                    <Th align="right">น้ำหนักรวม</Th>
+                    <Th align="right">ปริมาตรรวม</Th>
+                    <Th align="center"></Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((it) => (
+                    <tr key={it.id}>
+                      <Td>{it.sku}</Td>
+                      <Td>{it.product_name}</Td>
+                      <Td align="right">
+                        {it.quantity.toLocaleString()} {it.unit}
+                      </Td>
+                      <Td align="right">{it.total_weight_kg.toLocaleString()} กก.</Td>
+                      <Td align="right">{it.total_volume_m3.toLocaleString(undefined, { maximumFractionDigits: 4 })} ลบ.ม.</Td>
+                      <Td align="center">
+                        <Button size="sm" variant="danger" onClick={() => removeItem(it.id)}>
+                          ลบ
+                        </Button>
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Card>
+          )}
+
+          {items.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+              <SummaryTile label="จำนวน SKU" value={`${itemsSummary.skuCount} รายการ`} />
+              <SummaryTile label="จำนวนรวม" value={itemsSummary.totalQuantity.toLocaleString()} />
+              <SummaryTile label="น้ำหนักรวม (kg)" value={itemsSummary.totalWeight.toLocaleString()} />
+              <SummaryTile label="ปริมาตรรวม (m³)" value={itemsSummary.totalVolume.toLocaleString(undefined, { maximumFractionDigits: 4 })} />
+            </div>
+          ) : (
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--c-text-muted)', marginBottom: 10 }}>
+                หรือกรอกน้ำหนักและปริมาตรรวมเอง (ถ้าไม่ต้องการเลือกจากรายการสินค้า)
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <Field label="น้ำหนักรวม (กก.)" required>
+                  <Input type="number" value={draft.shipment_weight_kg} onChange={(e) => setDraft({ ...draft, shipment_weight_kg: e.target.value })} />
+                </Field>
+                <Field label="ปริมาตรรวม (ลบ.ม.)" required>
+                  <Input type="number" value={draft.shipment_volume_m3} onChange={(e) => setDraft({ ...draft, shipment_volume_m3: e.target.value })} />
+                </Field>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {step === 2 && (
         <Card>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>เลือกเส้นทางที่ต้องการเปรียบเทียบ</div>
           <div style={{ fontSize: 12, color: 'var(--c-text-muted)', marginBottom: 16 }}>เลือกได้มากกว่า 1 เส้นทาง — เฉพาะเส้นทางที่เปิดใช้งานเท่านั้น</div>
@@ -276,7 +511,7 @@ export default function PlanningWizardPage() {
         </Card>
       )}
 
-      {step === 2 && (
+      {step === 3 && (
         <Card>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>เลือกยานพาหนะที่ต้องการเปรียบเทียบ</div>
           <div style={{ fontSize: 12, color: 'var(--c-text-muted)', marginBottom: 16 }}>
@@ -313,7 +548,7 @@ export default function PlanningWizardPage() {
         </Card>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <Card>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>เลือกโปรไฟล์การตัดสินใจ (AHP)</div>
           <div style={{ fontSize: 12, color: 'var(--c-text-muted)', marginBottom: 16 }}>แสดงเฉพาะโปรไฟล์ที่ใช้งานอยู่และผ่านเกณฑ์ความสอดคล้อง</div>
@@ -347,19 +582,20 @@ export default function PlanningWizardPage() {
         </Card>
       )}
 
-      {step === 4 && (
+      {step === 5 && (
         <Card>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}>ตรวจสอบข้อมูลก่อนสร้างคำแนะนำ</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
             <Row label="เส้นทาง → ปลายทาง" value={`${draft.origin} → ${draft.destination}`} />
             <Row label="น้ำหนัก / ปริมาตร" value={`${draft.shipment_weight_kg} กก. / ${draft.shipment_volume_m3} ลบ.ม.`} />
+            {items.length > 0 && <Row label="จำนวนรายการสินค้า" value={`${itemsSummary.skuCount} SKU / ${itemsSummary.totalQuantity.toLocaleString()} หน่วย`} />}
             <Row label="จำนวนเส้นทางที่เลือก" value={`${draft.routeIds.length} เส้นทาง`} />
             <Row label="จำนวนยานพาหนะที่เลือก" value={`${draft.vehicleIds.length} คัน`} />
             <Row label="โปรไฟล์การตัดสินใจ" value={selectedProfile?.name ?? '-'} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
             <Button onClick={generate} loading={generating}>
-              สร้างคำแนะนำ →
+              แนะนำยานพาหนะ →
             </Button>
           </div>
         </Card>
@@ -380,6 +616,15 @@ function Row({ label, value }: { label: string; value: string }) {
     <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 8, borderBottom: '1px solid #f3f4f6' }}>
       <span style={{ color: 'var(--c-text-muted)' }}>{label}</span>
       <span style={{ fontWeight: 600 }}>{value}</span>
+    </div>
+  );
+}
+
+function SummaryTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ border: '1px solid var(--c-border)', borderRadius: 10, padding: '12px 14px' }}>
+      <div style={{ fontSize: 11, color: 'var(--c-text-muted)', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 700 }}>{value}</div>
     </div>
   );
 }
