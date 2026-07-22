@@ -1,4 +1,19 @@
+from sqlalchemy import create_engine, text
+
 from app.tdss.services.ahp_service import default_consistent_pairwise
+from tests.conftest import TEST_DB_URL
+
+
+def _activate_org_directly(org_id: int) -> None:
+    """Self-registered orgs now start as 'pending' (see auth_router.register)
+    until a System Owner approves them. Most tests here aren't exercising
+    that approval flow itself — they just need a usable org — so bypass it
+    with a direct DB write instead of bootstrapping a System Owner account
+    in every test."""
+    engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE tdss_organizations SET status = 'active' WHERE id = :id"), {"id": org_id})
+    engine.dispose()
 
 
 def _register(client, email="admin1@test.com", org="Org One"):
@@ -7,7 +22,11 @@ def _register(client, email="admin1@test.com", org="Org One"):
         json={"name": "Admin One", "email": email, "password": "password123", "organization_name": org},
     )
     assert res.status_code == 200, res.text
-    return res.json()
+    data = res.json()
+    org_id = data["user"]["memberships"][0]["organization_id"]
+    _activate_org_directly(org_id)
+    data["user"]["memberships"][0]["organization_status"] = "active"
+    return data
 
 
 def _auth_headers(token):

@@ -68,7 +68,11 @@ def require_org_access(organization_id: int, db: Session, user: User) -> Members
     from app.tdss.models import Organization
 
     org = db.query(Organization).filter(Organization.id == organization_id).first()
-    if org is None or org.status != "active":
+    if org is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Organization is suspended")
+    if org.status == "pending":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Organization is pending approval by the System Owner")
+    if org.status != "active":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Organization is suspended")
     return membership
 

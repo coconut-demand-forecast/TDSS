@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.tdss.auth import create_access_token, get_current_user, hash_password, verify_password
 from app.tdss.models import ROLE_ORG_ADMIN, Membership, Organization, User
+from app.tdss.routers.notifications_router import notify
 from app.tdss.schemas import (
     ChangePasswordRequest,
     LoginRequest,
@@ -41,7 +42,12 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     """Registers a new user AND a new organization, making the user that
     organization's admin. This is the practical "sign up your company"
     entry point — joining an *existing* organization happens via the
-    Organization Admin inviting a user (see /api/tdss/organizations/{id}/users)."""
+    Organization Admin inviting a user (see /api/tdss/organizations/{id}/users).
+
+    The new organization starts as "pending" — not usable — until a System
+    Owner approves it (POST /api/tdss/owner/organizations/{id}/activate, the
+    same endpoint already used to reactivate a suspended org). This keeps
+    self-service signup from granting immediate, unreviewed access."""
     existing = db.query(User).filter(User.email == data.email).first()
     if existing:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Email already registered")
@@ -50,12 +56,22 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     db.add(user)
     db.flush()
 
-    org = Organization(name=data.organization_name)
+    org = Organization(name=data.organization_name, status="pending")
     db.add(org)
     db.flush()
 
     membership = Membership(user_id=user.id, organization_id=org.id, role=ROLE_ORG_ADMIN)
     db.add(membership)
+
+    for owner in db.query(User).filter(User.is_system_owner == True).all():  # noqa: E712
+        notify(
+            db,
+            user_id=owner.id,
+            organization_id=None,
+            type_="org_pending_approval",
+            message=f"องค์กรใหม่ \"{org.name}\" สมัครใช้งานและรอการอนุมัติ",
+        )
+
     db.commit()
     db.refresh(user)
 

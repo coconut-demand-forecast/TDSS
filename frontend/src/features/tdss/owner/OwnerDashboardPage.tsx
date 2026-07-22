@@ -31,6 +31,7 @@ export default function OwnerDashboardPage() {
   const kpis = [
     { label: 'องค์กรทั้งหมด', value: data.total_organizations },
     { label: 'องค์กรที่ใช้งานอยู่', value: data.active_organizations },
+    { label: 'รอการอนุมัติ', value: data.pending_organizations },
     { label: 'องค์กรที่ถูกระงับ', value: data.suspended_organizations },
     { label: 'ผู้ใช้งานทั้งหมด', value: data.total_users },
     { label: 'งานขนส่งทั้งหมด', value: data.total_jobs },

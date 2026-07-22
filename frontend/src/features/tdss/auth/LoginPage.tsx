@@ -102,14 +102,6 @@ export default function LoginPage() {
             {isRegister ? t('login.switchToLogin') : t('login.switchToRegister')}
           </button>
         </div>
-
-        <div style={{ marginTop: 28, padding: 14, background: '#f6f7f8', borderRadius: 10, fontSize: 11.5, color: 'var(--c-text-muted)', lineHeight: 1.6 }}>
-          <strong>{t('login.demoAccountsLabel')}</strong> ({t('login.demoAccountsPasswordNote')}):
-          <br />
-          System Owner: owner@tdss.local
-          <br />
-          Org Admin: admin@orgone.local · Planner: planner@orgone.local · Viewer: viewer@orgone.local
-        </div>
       </section>
     </div>
   );

@@ -40,6 +40,7 @@ def owner_dashboard(db: Session = Depends(get_db), owner: User = Depends(require
         total_organizations=len(orgs),
         active_organizations=sum(1 for o in orgs if o.status == "active"),
         suspended_organizations=sum(1 for o in orgs if o.status == "suspended"),
+        pending_organizations=sum(1 for o in orgs if o.status == "pending"),
         total_users=db.query(User).count(),
         total_jobs=db.query(TransportJob).count(),
         recommendation_runs=db.query(RecommendationRun).count(),

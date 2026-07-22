@@ -19,6 +19,7 @@ const STATUS_TONE: Record<string, Tone> = {
   planning: 'warning',
   draft: 'neutral',
   inactive: 'neutral',
+  pending: 'warning',
   suspended: 'danger',
   disabled: 'danger',
   cancelled: 'danger',

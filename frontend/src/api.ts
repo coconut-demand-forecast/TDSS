@@ -263,6 +263,7 @@ export interface OwnerDashboard {
   total_organizations: number;
   active_organizations: number;
   suspended_organizations: number;
+  pending_organizations: number;
   total_users: number;
   total_jobs: number;
   recommendation_runs: number;

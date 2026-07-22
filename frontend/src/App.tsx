@@ -5,6 +5,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { ProtectedRoute, OwnerRoute, AdminRoute } from './components/ProtectedRoute';
 
 import LoginPage from './features/tdss/auth/LoginPage';
+import PendingApprovalPage from './features/tdss/auth/PendingApprovalPage';
 import DashboardPage from './features/tdss/dashboard/DashboardPage';
 import VehiclesPage from './features/tdss/vehicles/VehiclesPage';
 import ProductsPage from './features/tdss/products/ProductsPage';
@@ -42,6 +43,12 @@ function HomeRedirect() {
   return <Navigate to={user.is_system_owner ? '/tdss/owner/dashboard' : '/tdss/dashboard'} replace />;
 }
 
+function PendingApprovalRoute() {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  return <PendingApprovalPage />;
+}
+
 export default function App() {
   return (
     <LanguageProvider>
@@ -51,6 +58,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<LoginRoute />} />
             <Route path="/" element={<HomeRedirect />} />
+            <Route path="/pending-approval" element={<PendingApprovalRoute />} />
 
             {/* Organization workspace */}
             <Route path="/tdss/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />

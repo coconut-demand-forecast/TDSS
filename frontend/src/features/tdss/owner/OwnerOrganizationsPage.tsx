@@ -61,7 +61,7 @@ export default function OwnerOrganizationsPage() {
     try {
       if (org.status === 'active') await ownerApi.suspendOrganization(org.id);
       else await ownerApi.activateOrganization(org.id);
-      showSuccess('อัปเดตสถานะแล้ว');
+      showSuccess(org.status === 'pending' ? 'อนุมัติองค์กรแล้ว' : 'อัปเดตสถานะแล้ว');
       await load();
     } catch {
       showError('อัปเดตสถานะไม่สำเร็จ');
@@ -102,25 +102,27 @@ export default function OwnerOrganizationsPage() {
               </tr>
             </thead>
             <tbody>
-              {orgs.map((o) => (
-                <tr key={o.id}>
-                  <Td>{o.name}</Td>
-                  <Td align="center">
-                    <StatusBadge status={o.status} />
-                  </Td>
-                  <Td>{new Date(o.created_at).toLocaleDateString('th-TH')}</Td>
-                  <Td align="center">
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                      <Button size="sm" variant="secondary" onClick={() => openFeatures(o)}>
-                        ฟีเจอร์
-                      </Button>
-                      <Button size="sm" variant={o.status === 'active' ? 'danger' : 'secondary'} onClick={() => toggleOrgStatus(o)}>
-                        {o.status === 'active' ? 'ระงับ' : 'เปิดใช้งาน'}
-                      </Button>
-                    </div>
-                  </Td>
-                </tr>
-              ))}
+              {[...orgs]
+                .sort((a, b) => (a.status === 'pending' ? -1 : 0) - (b.status === 'pending' ? -1 : 0))
+                .map((o) => (
+                  <tr key={o.id}>
+                    <Td>{o.name}</Td>
+                    <Td align="center">
+                      <StatusBadge status={o.status} />
+                    </Td>
+                    <Td>{new Date(o.created_at).toLocaleDateString('th-TH')}</Td>
+                    <Td align="center">
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                        <Button size="sm" variant="secondary" onClick={() => openFeatures(o)}>
+                          ฟีเจอร์
+                        </Button>
+                        <Button size="sm" variant={o.status === 'active' ? 'danger' : 'secondary'} onClick={() => toggleOrgStatus(o)}>
+                          {o.status === 'pending' ? 'อนุมัติ' : o.status === 'active' ? 'ระงับ' : 'เปิดใช้งาน'}
+                        </Button>
+                      </div>
+                    </Td>
+                  </tr>
+                ))}
             </tbody>
           </Table>
         </Card>

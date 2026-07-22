@@ -491,6 +491,7 @@ class OwnerDashboardOut(BaseModel):
     total_organizations: int
     active_organizations: int
     suspended_organizations: int
+    pending_organizations: int
     total_users: int
     total_jobs: int
     recommendation_runs: int
