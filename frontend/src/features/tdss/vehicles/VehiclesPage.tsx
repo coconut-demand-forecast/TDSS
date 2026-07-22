@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
 import { Button, Card, Dialog, EmptyState, Field, Input, LoadingState, PageHeader, Select, StatusBadge, Table, Td, Th } from '../../../components/ui';
@@ -6,20 +6,30 @@ import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { vehiclesApi, type Vehicle } from '../../../api';
 import { FUEL_SPECS, FUEL_TYPE_OPTIONS } from './fuelReference';
+import { CUSTOM_VEHICLE_TYPE, DEFAULT_FUEL_COST_PER_UNIT, VEHICLE_TYPE_PRESETS } from './vehicleTypePresets';
 
 const EMPTY_FORM = {
   vehicle_code: '',
   registration_number: '',
+  vehicle_type_choice: '',
   vehicle_type: '',
   capacity_weight_kg: '',
   capacity_volume_m3: '',
   fuel_type: '',
   fuel_consumption_km_per_liter: '',
   fuel_cost_per_unit: '',
-  cost_per_km: '',
   fixed_cost: '0',
-  co2_factor: '',
 };
+
+// Estimated cost/km for the list view — fuel_cost_per_unit / consumption
+// when fuel data is present (matches the fuel-based formula scoring uses),
+// otherwise the vehicle's legacy flat rate. Display only.
+function estimatedCostPerKm(v: Vehicle): number {
+  if (v.fuel_type && v.fuel_consumption_km_per_liter && v.fuel_cost_per_unit) {
+    return v.fuel_cost_per_unit / v.fuel_consumption_km_per_liter;
+  }
+  return v.cost_per_km;
+}
 
 export default function VehiclesPage() {
   const { t } = useLanguage();
@@ -62,20 +72,49 @@ export default function VehiclesPage() {
 
   const openEdit = (v: Vehicle) => {
     setEditing(v);
+    const matchedPreset = VEHICLE_TYPE_PRESETS.find((p) => p.labelTh === v.vehicle_type);
     setForm({
       vehicle_code: v.vehicle_code,
       registration_number: v.registration_number,
+      vehicle_type_choice: matchedPreset ? matchedPreset.key : CUSTOM_VEHICLE_TYPE,
       vehicle_type: v.vehicle_type,
       capacity_weight_kg: String(v.capacity_weight_kg),
       capacity_volume_m3: String(v.capacity_volume_m3),
       fuel_type: v.fuel_type ?? '',
       fuel_consumption_km_per_liter: v.fuel_consumption_km_per_liter != null ? String(v.fuel_consumption_km_per_liter) : '',
       fuel_cost_per_unit: v.fuel_cost_per_unit != null ? String(v.fuel_cost_per_unit) : '',
-      cost_per_km: String(v.cost_per_km),
       fixed_cost: String(v.fixed_cost),
-      co2_factor: String(v.co2_factor),
     });
     setShowForm(true);
+  };
+
+  const onVehicleTypeChoiceChange = (choice: string) => {
+    if (choice === CUSTOM_VEHICLE_TYPE) {
+      setForm({ ...form, vehicle_type_choice: choice, vehicle_type: '' });
+      return;
+    }
+    const preset = VEHICLE_TYPE_PRESETS.find((p) => p.key === choice);
+    if (!preset) {
+      setForm({ ...form, vehicle_type_choice: choice, vehicle_type: '' });
+      return;
+    }
+    setForm({
+      ...form,
+      vehicle_type_choice: choice,
+      vehicle_type: preset.labelTh,
+      capacity_weight_kg: String(preset.capacityWeightKg),
+      capacity_volume_m3: String(preset.capacityVolumeM3),
+      fuel_consumption_km_per_liter: String(preset.fuelConsumptionKmPerLiter),
+    });
+  };
+
+  const onFuelTypeChange = (fuelType: string) => {
+    const defaultPrice = DEFAULT_FUEL_COST_PER_UNIT[fuelType];
+    setForm({
+      ...form,
+      fuel_type: fuelType,
+      fuel_cost_per_unit: fuelType && defaultPrice != null ? String(defaultPrice) : form.fuel_cost_per_unit,
+    });
   };
 
   const submit = async () => {
@@ -84,13 +123,8 @@ export default function VehiclesPage() {
       showError('กรุณากรอกข้อมูลที่จำเป็นให้ครบ (มีเครื่องหมาย *)');
       return;
     }
-    if (selectedFuelSpec) {
-      if (!form.fuel_consumption_km_per_liter || !form.fuel_cost_per_unit) {
-        showError('เมื่อเลือกประเภทเชื้อเพลิงแล้ว กรุณากรอกอัตราสิ้นเปลืองและราคาเชื้อเพลิงให้ครบ');
-        return;
-      }
-    } else if (!form.cost_per_km || !form.co2_factor) {
-      showError('กรุณากรอกต้นทุนต่อกิโลเมตรและค่าสัมประสิทธิ์ CO2 (หรือเลือกประเภทเชื้อเพลิงแทน)');
+    if (!form.fuel_type || !form.fuel_consumption_km_per_liter || !form.fuel_cost_per_unit) {
+      showError('กรุณาเลือกประเภทเชื้อเพลิง และกรอกอัตราสิ้นเปลืองกับราคาเชื้อเพลิงให้ครบ');
       return;
     }
     setSaving(true);
@@ -101,12 +135,10 @@ export default function VehiclesPage() {
         vehicle_type: form.vehicle_type,
         capacity_weight_kg: Number(form.capacity_weight_kg),
         capacity_volume_m3: Number(form.capacity_volume_m3),
-        fuel_type: form.fuel_type || undefined,
-        fuel_consumption_km_per_liter: form.fuel_consumption_km_per_liter ? Number(form.fuel_consumption_km_per_liter) : undefined,
-        fuel_cost_per_unit: form.fuel_cost_per_unit ? Number(form.fuel_cost_per_unit) : undefined,
-        cost_per_km: Number(form.cost_per_km),
+        fuel_type: form.fuel_type,
+        fuel_consumption_km_per_liter: Number(form.fuel_consumption_km_per_liter),
+        fuel_cost_per_unit: Number(form.fuel_cost_per_unit),
         fixed_cost: Number(form.fixed_cost || 0),
-        co2_factor: Number(form.co2_factor),
       };
       if (editing) {
         await vehiclesApi.update(currentOrgId, editing.id, payload);
@@ -164,7 +196,7 @@ export default function VehiclesPage() {
                 <Th>ประเภท</Th>
                 <Th align="right">ความจุน้ำหนัก</Th>
                 <Th align="right">ความจุปริมาตร</Th>
-                <Th align="right">ต้นทุน/กม.</Th>
+                <Th align="right">ต้นทุน/กม. (ประมาณการ)</Th>
                 <Th align="center">สถานะ</Th>
                 {canWrite && <Th align="center"></Th>}
               </tr>
@@ -177,7 +209,7 @@ export default function VehiclesPage() {
                   <Td>{v.vehicle_type}</Td>
                   <Td align="right">{v.capacity_weight_kg.toLocaleString()} กก.</Td>
                   <Td align="right">{v.capacity_volume_m3.toLocaleString()} ลบ.ม.</Td>
-                  <Td align="right">฿{v.cost_per_km.toLocaleString()}</Td>
+                  <Td align="right">฿{estimatedCostPerKm(v).toLocaleString(undefined, { maximumFractionDigits: 2 })}</Td>
                   <Td align="center">
                     <StatusBadge status={v.status} />
                   </Td>
@@ -201,55 +233,72 @@ export default function VehiclesPage() {
       )}
 
       {showForm && (
-        <Dialog title={editing ? 'แก้ไขยานพาหนะ' : 'เพิ่มยานพาหนะ'} onClose={() => setShowForm(false)}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <Field label="รหัสยานพาหนะ" required>
-              <Input value={form.vehicle_code} onChange={(e) => setForm({ ...form, vehicle_code: e.target.value })} />
-            </Field>
-            <Field label="ทะเบียนรถ" required>
-              <Input value={form.registration_number} onChange={(e) => setForm({ ...form, registration_number: e.target.value })} />
-            </Field>
-            <Field label="ประเภทยานพาหนะ" required>
-              <Input value={form.vehicle_type} onChange={(e) => setForm({ ...form, vehicle_type: e.target.value })} placeholder="เช่น รถบรรทุก 6 ล้อ" />
-            </Field>
-            <Field label="ประเภทเชื้อเพลิง">
-              <Select value={form.fuel_type} onChange={(e) => setForm({ ...form, fuel_type: e.target.value })}>
-                <option value="">ไม่ระบุ (ใช้ต้นทุน/CO2 แบบกำหนดเอง)</option>
-                {FUEL_TYPE_OPTIONS.map((f) => (
-                  <option key={f.key} value={f.key}>
-                    {f.labelTh}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="ความจุน้ำหนัก (กก.)" required>
-              <Input type="number" value={form.capacity_weight_kg} onChange={(e) => setForm({ ...form, capacity_weight_kg: e.target.value })} />
-            </Field>
-            <Field label="ความจุปริมาตร (ลบ.ม.)" required>
-              <Input type="number" value={form.capacity_volume_m3} onChange={(e) => setForm({ ...form, capacity_volume_m3: e.target.value })} />
-            </Field>
-            <Field label={`อัตราสิ้นเปลือง (กม./${selectedFuelSpec?.unitLabel ?? 'หน่วย'})`}>
-              <Input type="number" value={form.fuel_consumption_km_per_liter} onChange={(e) => setForm({ ...form, fuel_consumption_km_per_liter: e.target.value })} />
-            </Field>
-            <Field label={`ราคาเชื้อเพลิง (บาท/${selectedFuelSpec?.unitLabel ?? 'หน่วย'})`}>
-              <Input type="number" value={form.fuel_cost_per_unit} onChange={(e) => setForm({ ...form, fuel_cost_per_unit: e.target.value })} />
-            </Field>
-            {selectedFuelSpec && (
-              <div style={{ gridColumn: '1 / -1', fontSize: 12, color: 'var(--c-text-muted)', background: '#f6f7f8', borderRadius: 8, padding: '8px 12px' }}>
-                Emission Factor ({selectedFuelSpec.labelTh}): <strong>{selectedFuelSpec.kgCo2PerUnit} kgCO2 / {selectedFuelSpec.unitLabel}</strong> — ค่ามาตรฐานภายในระบบ ไม่สามารถแก้ไขเอง
-              </div>
-            )}
-            <Field label="ต้นทุนต่อกิโลเมตร (บาท)" required={!selectedFuelSpec}>
-              <Input type="number" value={form.cost_per_km} onChange={(e) => setForm({ ...form, cost_per_km: e.target.value })} />
-            </Field>
-            <Field label="ต้นทุนคงที่ (บาท)">
-              <Input type="number" value={form.fixed_cost} onChange={(e) => setForm({ ...form, fixed_cost: e.target.value })} />
-            </Field>
-            <Field label="ค่าสัมประสิทธิ์ CO2 (กก./กม.)" required={!selectedFuelSpec}>
-              <Input type="number" value={form.co2_factor} onChange={(e) => setForm({ ...form, co2_factor: e.target.value })} />
-            </Field>
+        <Dialog title={editing ? 'แก้ไขยานพาหนะ' : 'เพิ่มยานพาหนะ'} onClose={() => setShowForm(false)} width={720}>
+          <div style={{ display: 'grid', gap: 22 }}>
+            <FormSection title="ข้อมูลรถ">
+              <Field label="รหัสยานพาหนะ" required>
+                <Input value={form.vehicle_code} onChange={(e) => setForm({ ...form, vehicle_code: e.target.value })} />
+              </Field>
+              <Field label="ทะเบียนรถ" required>
+                <Input value={form.registration_number} onChange={(e) => setForm({ ...form, registration_number: e.target.value })} />
+              </Field>
+              <Field label="ประเภทยานพาหนะ" required>
+                <Select value={form.vehicle_type_choice} onChange={(e) => onVehicleTypeChoiceChange(e.target.value)}>
+                  <option value="">-- เลือกประเภทยานพาหนะ --</option>
+                  {VEHICLE_TYPE_PRESETS.map((p) => (
+                    <option key={p.key} value={p.key}>
+                      {p.labelTh}
+                    </option>
+                  ))}
+                  <option value={CUSTOM_VEHICLE_TYPE}>อื่นๆ (ระบุเอง)</option>
+                </Select>
+              </Field>
+              {form.vehicle_type_choice === CUSTOM_VEHICLE_TYPE && (
+                <Field label="ระบุประเภทยานพาหนะ" required>
+                  <Input value={form.vehicle_type} onChange={(e) => setForm({ ...form, vehicle_type: e.target.value })} placeholder="เช่น รถหัวลาก" />
+                </Field>
+              )}
+            </FormSection>
+
+            <FormSection title="ความสามารถในการบรรทุก">
+              <Field label="ความจุน้ำหนัก (กก.)" required>
+                <Input type="number" value={form.capacity_weight_kg} onChange={(e) => setForm({ ...form, capacity_weight_kg: e.target.value })} />
+              </Field>
+              <Field label="ความจุปริมาตร (ลบ.ม.)" required>
+                <Input type="number" value={form.capacity_volume_m3} onChange={(e) => setForm({ ...form, capacity_volume_m3: e.target.value })} />
+              </Field>
+            </FormSection>
+
+            <FormSection title="ข้อมูลต้นทุนและเชื้อเพลิง">
+              <Field label="ประเภทเชื้อเพลิง" required>
+                <Select value={form.fuel_type} onChange={(e) => onFuelTypeChange(e.target.value)}>
+                  <option value="">-- เลือกประเภทเชื้อเพลิง --</option>
+                  {FUEL_TYPE_OPTIONS.map((f) => (
+                    <option key={f.key} value={f.key}>
+                      {f.labelTh}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={`อัตราสิ้นเปลือง (กม./${selectedFuelSpec?.unitLabel ?? 'หน่วย'})`} required>
+                <Input type="number" value={form.fuel_consumption_km_per_liter} onChange={(e) => setForm({ ...form, fuel_consumption_km_per_liter: e.target.value })} />
+              </Field>
+              <Field label={`ราคาเชื้อเพลิง (บาท/${selectedFuelSpec?.unitLabel ?? 'หน่วย'})`} required>
+                <Input type="number" value={form.fuel_cost_per_unit} onChange={(e) => setForm({ ...form, fuel_cost_per_unit: e.target.value })} />
+              </Field>
+              <Field label="ค่าสัมประสิทธิ์การปล่อย CO2">
+                <Input
+                  readOnly
+                  value={selectedFuelSpec ? `${selectedFuelSpec.kgCo2PerUnit} kgCO2 / ${selectedFuelSpec.unitLabel}` : '— เลือกประเภทเชื้อเพลิงก่อน —'}
+                  style={{ background: '#f6f7f8', color: 'var(--c-text-muted)', cursor: 'not-allowed' }}
+                />
+              </Field>
+              <Field label="ต้นทุนคงที่ (บาท)">
+                <Input type="number" value={form.fixed_cost} onChange={(e) => setForm({ ...form, fixed_cost: e.target.value })} />
+              </Field>
+            </FormSection>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22 }}>
             <Button variant="secondary" onClick={() => setShowForm(false)}>
               ยกเลิก
             </Button>
@@ -260,5 +309,14 @@ export default function VehiclesPage() {
         </Dialog>
       )}
     </OrgWorkspaceLayout>
+  );
+}
+
+function FormSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--c-text)', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid var(--c-border)' }}>{title}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>{children}</div>
+    </div>
   );
 }
