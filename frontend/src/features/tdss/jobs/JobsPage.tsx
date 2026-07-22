@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
-import { Button, Card, Dialog, EmptyState, Field, Input, LoadingState, PageHeader, Select, StatusBadge, Table, Td, TextArea, Th } from '../../../components/ui';
+import { Button, Card, Dialog, EmptyState, Field, Input, LoadingState, PageHeader, Select, StatusBadge, Table, Td, Th } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { jobsApi, type TransportJob } from '../../../api';
@@ -19,12 +19,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const EMPTY_FORM = {
   customer_name: '',
-  origin: '',
-  destination: '',
-  required_delivery_datetime: '',
-  number_of_stops: '1',
   priority: 'normal',
-  special_requirements: '',
 };
 
 export default function JobsPage() {
@@ -69,17 +64,12 @@ export default function JobsPage() {
     try {
       const created = await jobsApi.create(currentOrgId, {
         customer_name: form.customer_name,
-        origin: form.origin || undefined,
-        destination: form.destination || undefined,
-        required_delivery_datetime: form.required_delivery_datetime ? new Date(form.required_delivery_datetime).toISOString() : undefined,
-        number_of_stops: Number(form.number_of_stops || 1),
         priority: form.priority,
-        special_requirements: form.special_requirements || undefined,
       });
       showSuccess('สร้างงานขนส่งสำเร็จ');
       setShowForm(false);
       setForm(EMPTY_FORM);
-      navigate(`/tdss/jobs/${created.id}`);
+      navigate(`/tdss/jobs/${created.id}/planning`);
     } catch (e: unknown) {
       const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
       showError(typeof detail === 'string' ? detail : 'สร้างงานไม่สำเร็จ');
@@ -163,15 +153,6 @@ export default function JobsPage() {
                 <Input value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} />
               </Field>
             </div>
-            <Field label="ต้นทาง">
-              <Input value={form.origin} onChange={(e) => setForm({ ...form, origin: e.target.value })} />
-            </Field>
-            <Field label="ปลายทาง">
-              <Input value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} />
-            </Field>
-            <Field label="กำหนดส่งมอบ">
-              <Input type="datetime-local" value={form.required_delivery_datetime} onChange={(e) => setForm({ ...form, required_delivery_datetime: e.target.value })} />
-            </Field>
             <Field label="ความสำคัญ">
               <Select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
                 <option value="low">ต่ำ</option>
@@ -180,21 +161,16 @@ export default function JobsPage() {
                 <option value="urgent">เร่งด่วน</option>
               </Select>
             </Field>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <Field label="ความต้องการพิเศษ">
-                <TextArea value={form.special_requirements} onChange={(e) => setForm({ ...form, special_requirements: e.target.value })} />
-              </Field>
-            </div>
           </div>
           <div style={{ fontSize: 12, color: 'var(--c-text-muted)', marginTop: 14 }}>
-            กรอกน้ำหนักและปริมาตรสินค้าได้ภายหลังในหน้ารายละเอียดงาน หรือระหว่างขั้นตอนวางแผน (Planning Wizard)
+            ต้นทาง ปลายทาง กำหนดส่งมอบ และรายการสินค้า กรอกได้ในขั้นตอนถัดไป (Planning Wizard)
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
             <Button variant="secondary" onClick={() => setShowForm(false)}>
               ยกเลิก
             </Button>
             <Button onClick={submit} loading={saving}>
-              บันทึกและเปิดดู
+              สร้างและเริ่มวางแผน →
             </Button>
           </div>
         </Dialog>
