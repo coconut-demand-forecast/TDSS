@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
-import { Button, Card, Field, Input, LoadingState, PageHeader, Select, StatusBadge, TextArea } from '../../../components/ui';
+import { Button, Card, Field, Input, LoadingState, PageHeader, Select, StatusBadge, Table, Td, Th, TextArea } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
-import { jobsApi, type TransportJob } from '../../../api';
+import { jobItemsApi, jobsApi, type TransportJob, type TransportJobItem } from '../../../api';
 
 interface RunHistoryItem {
   id: number;
@@ -21,6 +21,7 @@ export default function JobDetailPage() {
   const { showSuccess, showError } = useToast();
   const navigate = useNavigate();
   const [job, setJob] = useState<TransportJob | null>(null);
+  const [items, setItems] = useState<TransportJobItem[]>([]);
   const [history, setHistory] = useState<RunHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -37,6 +38,7 @@ export default function JobDetailPage() {
       const j = await jobsApi.get(currentOrgId, Number(jobId));
       setJob(j);
       setForm(j);
+      setItems(await jobItemsApi.list(currentOrgId, Number(jobId)));
       setHistory((await jobsApi.history(currentOrgId, Number(jobId))) as RunHistoryItem[]);
     } catch {
       showError('โหลดข้อมูลงานไม่สำเร็จ');
@@ -58,8 +60,11 @@ export default function JobDetailPage() {
         customer_name: form.customer_name,
         origin: form.origin || undefined,
         destination: form.destination || undefined,
-        shipment_weight_kg: form.shipment_weight_kg ? Number(form.shipment_weight_kg) : undefined,
-        shipment_volume_m3: form.shipment_volume_m3 ? Number(form.shipment_volume_m3) : undefined,
+        // When the job has product line items, weight/volume are computed
+        // from them (see Planning Wizard) — omit these keys entirely so we
+        // never overwrite that computed total with a stale manual value.
+        shipment_weight_kg: items.length > 0 ? undefined : form.shipment_weight_kg ? Number(form.shipment_weight_kg) : undefined,
+        shipment_volume_m3: items.length > 0 ? undefined : form.shipment_volume_m3 ? Number(form.shipment_volume_m3) : undefined,
         priority: form.priority,
         special_requirements: form.special_requirements || undefined,
       });
@@ -172,12 +177,21 @@ export default function JobDetailPage() {
               <Field label="ปลายทาง">
                 <Input value={form.destination ?? ''} onChange={(e) => setForm({ ...form, destination: e.target.value })} />
               </Field>
-              <Field label="น้ำหนัก (กก.)">
-                <Input type="number" value={form.shipment_weight_kg ?? ''} onChange={(e) => setForm({ ...form, shipment_weight_kg: Number(e.target.value) })} />
-              </Field>
-              <Field label="ปริมาตร (ลบ.ม.)">
-                <Input type="number" value={form.shipment_volume_m3 ?? ''} onChange={(e) => setForm({ ...form, shipment_volume_m3: Number(e.target.value) })} />
-              </Field>
+              {items.length > 0 ? (
+                <div style={{ gridColumn: '1 / -1', fontSize: 12, color: 'var(--c-text-muted)', background: '#f6f7f8', borderRadius: 8, padding: '10px 12px' }}>
+                  น้ำหนัก/ปริมาตรคำนวณจาก {items.length} รายการสินค้าที่เลือกไว้ ({job.shipment_weight_kg?.toLocaleString()} กก. / {job.shipment_volume_m3?.toLocaleString()} ลบ.ม.) —
+                  แก้ไขรายการสินค้าได้ที่ Planning Wizard
+                </div>
+              ) : (
+                <>
+                  <Field label="น้ำหนัก (กก.)">
+                    <Input type="number" value={form.shipment_weight_kg ?? ''} onChange={(e) => setForm({ ...form, shipment_weight_kg: Number(e.target.value) })} />
+                  </Field>
+                  <Field label="ปริมาตร (ลบ.ม.)">
+                    <Input type="number" value={form.shipment_volume_m3 ?? ''} onChange={(e) => setForm({ ...form, shipment_volume_m3: Number(e.target.value) })} />
+                  </Field>
+                </>
+              )}
               <Field label="ความสำคัญ">
                 <Select value={form.priority ?? 'normal'} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
                   <option value="low">ต่ำ</option>
@@ -208,6 +222,36 @@ export default function JobDetailPage() {
               <Row label="ปริมาตร" value={job.shipment_volume_m3 ? `${job.shipment_volume_m3.toLocaleString()} ลบ.ม.` : '-'} />
               <Row label="ความสำคัญ" value={job.priority} />
               <Row label="ความต้องการพิเศษ" value={job.special_requirements || '-'} />
+
+              {items.length > 0 && (
+                <div style={{ marginTop: 4 }}>
+                  <div style={{ fontWeight: 700, fontSize: 12.5, marginBottom: 8, color: 'var(--c-text-muted)' }}>รายการสินค้า ({items.length})</div>
+                  <Table minWidth={360}>
+                    <thead>
+                      <tr>
+                        <Th>SKU</Th>
+                        <Th>ชื่อสินค้า</Th>
+                        <Th align="right">จำนวน</Th>
+                        <Th align="right">น้ำหนักรวม</Th>
+                        <Th align="right">ปริมาตรรวม</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((it) => (
+                        <tr key={it.id}>
+                          <Td>{it.sku}</Td>
+                          <Td>{it.product_name}</Td>
+                          <Td align="right">
+                            {it.quantity.toLocaleString()} {it.unit}
+                          </Td>
+                          <Td align="right">{it.total_weight_kg.toLocaleString()} กก.</Td>
+                          <Td align="right">{it.total_volume_m3.toLocaleString(undefined, { maximumFractionDigits: 4 })} ลบ.ม.</Td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
+              )}
             </div>
           )}
         </Card>
