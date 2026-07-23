@@ -10,6 +10,12 @@ import { isGoogleMapsConfigured } from './googleMapsClient';
 
 const GOOGLE_MAPS_AVAILABLE = isGoogleMapsConfigured();
 
+// Flat representative toll fee used when "มีค่าทางด่วน" is ticked — a
+// simplification the user chose over entering an exact amount per route.
+// Every route with a toll gets the same flat cost in the AHP "cost"
+// criterion; it no longer distinguishes a 20-baht toll from a 200-baht one.
+const FLAT_TOLL_COST = 50;
+
 const EMPTY_FORM = {
   route_code: '',
   route_name: '',
@@ -17,7 +23,7 @@ const EMPTY_FORM = {
   destination: '',
   distance_km: '',
   estimated_duration_minutes: '',
-  toll_cost: '0',
+  has_toll: false,
   route_risk_level: 'low',
   road_restrictions: '',
 };
@@ -80,7 +86,7 @@ export default function RoutesPage() {
       destination: r.destination,
       distance_km: String(r.distance_km),
       estimated_duration_minutes: String(r.estimated_duration_minutes),
-      toll_cost: String(r.toll_cost),
+      has_toll: r.toll_cost > 0,
       route_risk_level: r.route_risk_level,
       road_restrictions: r.road_restrictions ?? '',
     });
@@ -113,7 +119,7 @@ export default function RoutesPage() {
         destination: form.destination,
         distance_km: Number(form.distance_km),
         estimated_duration_minutes: Number(form.estimated_duration_minutes),
-        toll_cost: Number(form.toll_cost || 0),
+        toll_cost: form.has_toll ? FLAT_TOLL_COST : 0,
         route_risk_level: form.route_risk_level,
         road_restrictions: form.road_restrictions || undefined,
         mode: formMode,
@@ -284,8 +290,11 @@ export default function RoutesPage() {
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <Field label="ค่าทางด่วน (บาท)">
-              <Input type="number" value={form.toll_cost} onChange={(e) => setForm({ ...form, toll_cost: e.target.value })} />
+            <Field label="ค่าทางด่วน">
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', padding: '9px 0' }}>
+                <input type="checkbox" checked={form.has_toll} onChange={(e) => setForm({ ...form, has_toll: e.target.checked })} />
+                มีค่าทางด่วน
+              </label>
             </Field>
             <Field label="ระดับความเสี่ยง">
               <Select value={form.route_risk_level} onChange={(e) => setForm({ ...form, route_risk_level: e.target.value })}>
@@ -295,7 +304,7 @@ export default function RoutesPage() {
               </Select>
             </Field>
             <div style={{ gridColumn: '1 / -1' }}>
-              <Field label="ข้อจำกัดของเส้นทาง">
+              <Field label="หมายเหตุ">
                 <TextArea value={form.road_restrictions} onChange={(e) => setForm({ ...form, road_restrictions: e.target.value })} placeholder="เช่น ห้ามรถบรรทุกเกิน 10 ล้อ ช่วงเวลาเร่งด่วน" />
               </Field>
             </div>
