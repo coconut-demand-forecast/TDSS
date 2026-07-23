@@ -99,6 +99,8 @@ def get_organization_settings(organization_id: int, db: Session = Depends(get_db
         default_decision_profile_id=org.default_decision_profile_id,
         notify_on_recommendation_completed=org.notify_on_recommendation_completed,
         notify_on_job_approved=org.notify_on_job_approved,
+        avg_stop_time_minutes=org.avg_stop_time_minutes,
+        avg_stop_cost=org.avg_stop_cost,
     )
 
 
@@ -125,6 +127,8 @@ def update_organization_settings(
     org.default_decision_profile_id = data.default_decision_profile_id
     org.notify_on_recommendation_completed = data.notify_on_recommendation_completed
     org.notify_on_job_approved = data.notify_on_job_approved
+    org.avg_stop_time_minutes = data.avg_stop_time_minutes
+    org.avg_stop_cost = data.avg_stop_cost
     write_audit(db, organization_id=organization_id, user_id=user.id, action="update_settings", entity_type="organization", entity_id=org.id)
     db.commit()
     return get_organization_settings(organization_id, db, ctx)

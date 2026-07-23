@@ -42,6 +42,9 @@ export default function VehiclesPage() {
   const [editing, setEditing] = useState<Vehicle | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Vehicle | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const membership = user?.memberships.find((m) => m.organization_id === currentOrgId);
   const canWrite = user?.is_system_owner || membership?.role === 'org_admin' || membership?.role === 'planner';
@@ -169,6 +172,23 @@ export default function VehiclesPage() {
     }
   };
 
+  const confirmDelete = async () => {
+    if (!currentOrgId || !deleteTarget) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await vehiclesApi.remove(currentOrgId, deleteTarget.id);
+      showSuccess('ลบยานพาหนะแล้ว');
+      setDeleteTarget(null);
+      await load();
+    } catch (e: unknown) {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setDeleteError(typeof detail === 'string' ? detail : 'ลบไม่สำเร็จ');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <OrgWorkspaceLayout title={t('nav.vehicles')}>
       <PageHeader
@@ -221,6 +241,9 @@ export default function VehiclesPage() {
                         </Button>
                         <Button size="sm" variant={v.status === 'active' ? 'danger' : 'secondary'} onClick={() => toggleStatus(v)}>
                           {v.status === 'active' ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}
+                        </Button>
+                        <Button size="sm" variant="danger" onClick={() => { setDeleteTarget(v); setDeleteError(null); }}>
+                          ลบ
                         </Button>
                       </div>
                     </Td>
@@ -304,6 +327,27 @@ export default function VehiclesPage() {
             </Button>
             <Button onClick={submit} loading={saving}>
               บันทึก
+            </Button>
+          </div>
+        </Dialog>
+      )}
+
+      {deleteTarget && (
+        <Dialog title="ยืนยันการลบยานพาหนะ" onClose={() => setDeleteTarget(null)}>
+          <div style={{ fontSize: 13, marginBottom: 14 }}>
+            ต้องการลบยานพาหนะ <strong>{deleteTarget.vehicle_code}</strong> ใช่หรือไม่? การลบไม่สามารถย้อนกลับได้
+          </div>
+          {deleteError && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', borderRadius: 8, padding: '10px 12px', fontSize: 12.5, marginBottom: 14 }}>
+              {deleteError}
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+              ยกเลิก
+            </Button>
+            <Button variant="danger" onClick={confirmDelete} loading={deleting}>
+              ยืนยันการลบ
             </Button>
           </div>
         </Dialog>

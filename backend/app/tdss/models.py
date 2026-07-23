@@ -78,6 +78,14 @@ class Organization(Base):
     notify_on_recommendation_completed = Column(Boolean, default=True, nullable=False)
     notify_on_job_approved = Column(Boolean, default=True, nullable=False)
 
+    # Multi-drop cost/time impact (org-adjustable — per-stop handling time
+    # and cost vary too much by business type for one hardcoded constant to
+    # be defensible). Applied in scoring_service.raw_values() as
+    # (job.number_of_stops - 1) * these values, added on top of the
+    # existing route time / transport cost.
+    avg_stop_time_minutes = Column(Float, default=30.0, nullable=False)
+    avg_stop_cost = Column(Float, default=100.0, nullable=False)
+
     memberships = relationship("Membership", back_populates="organization", cascade="all, delete-orphan")
     features = relationship("OrganizationFeature", back_populates="organization", cascade="all, delete-orphan")
 

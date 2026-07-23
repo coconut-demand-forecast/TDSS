@@ -9,6 +9,7 @@ import PendingApprovalPage from './features/tdss/auth/PendingApprovalPage';
 import DashboardPage from './features/tdss/dashboard/DashboardPage';
 import VehiclesPage from './features/tdss/vehicles/VehiclesPage';
 import ProductsPage from './features/tdss/products/ProductsPage';
+import RouteOptimizationPage from './features/tdss/routeOptimization/RouteOptimizationPage';
 import RoutesPage from './features/tdss/routes/RoutesPage';
 import DecisionProfilesPage from './features/tdss/decisionProfiles/DecisionProfilesPage';
 import JobsPage from './features/tdss/jobs/JobsPage';
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="/tdss/vehicles" element={<ProtectedRoute><VehiclesPage /></ProtectedRoute>} />
             <Route path="/tdss/products" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
             <Route path="/tdss/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
+            <Route path="/tdss/route-optimization" element={<ProtectedRoute><RouteOptimizationPage /></ProtectedRoute>} />
             <Route path="/tdss/decision-profiles" element={<ProtectedRoute><DecisionProfilesPage /></ProtectedRoute>} />
             <Route path="/tdss/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
             <Route path="/tdss/ai-insights" element={<ProtectedRoute><AIInsightsPage /></ProtectedRoute>} />

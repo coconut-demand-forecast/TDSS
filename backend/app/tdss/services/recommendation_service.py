@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.tdss.models import (
     DecisionProfile,
+    Organization,
     RecommendationAlternative,
     RecommendationRun,
     Route,
@@ -31,6 +32,8 @@ def generate_recommendation(
     if not vehicles:
         raise ValueError("No valid candidate vehicles selected")
 
+    organization = db.query(Organization).filter(Organization.id == job.organization_id).first()
+
     checked = []  # list of (vehicle, route, rule_result)
     for vehicle in vehicles:
         for route in routes:
@@ -41,7 +44,11 @@ def generate_recommendation(
     feasible_index = []  # index into `checked` for feasible entries, aligned with feasible_raw
     for idx, (vehicle, route, rule_result) in enumerate(checked):
         if rule_result["feasible"]:
-            feasible_raw.append(scoring_service.raw_values(job, vehicle, route))
+            feasible_raw.append(
+                scoring_service.raw_values(
+                    job, vehicle, route, avg_stop_time_minutes=organization.avg_stop_time_minutes, avg_stop_cost=organization.avg_stop_cost
+                )
+            )
             feasible_index.append(idx)
 
     normalized_list = scoring_service.normalize_across(feasible_raw)
@@ -92,7 +99,12 @@ def generate_recommendation(
             vehicle_id=entry["vehicle"].id,
             route_id=entry["route"].id,
             distance_km=entry["route"].distance_km,
-            duration_minutes=entry["route"].estimated_duration_minutes,
+            # Use raw_values["time"], not the bare route duration — for a
+            # multi-drop job (number_of_stops > 1) these differ (extra stop
+            # time is added on top), and this column feeds both the
+            # Recommendation Result display and the AHP ranking itself, so
+            # they must show the same number the scoring actually used.
+            duration_minutes=raw.get("time", entry["route"].estimated_duration_minutes),
             cost=raw.get("cost", 0.0),
             weight_utilization=raw.get("weight_utilization", 0.0),
             volume_utilization=raw.get("volume_utilization", 0.0),

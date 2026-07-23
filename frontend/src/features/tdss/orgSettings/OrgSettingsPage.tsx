@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '../../../context/LanguageContext';
 import OrgWorkspaceLayout from '../../../layouts/OrgWorkspaceLayout';
-import { Button, Card, Field, LoadingState, PageHeader, Select } from '../../../components/ui';
+import { Button, Card, Field, Input, LoadingState, PageHeader, Select } from '../../../components/ui';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { organizationsApi, profilesApi, type DecisionProfile, type OrganizationSettings } from '../../../api';
@@ -96,6 +96,25 @@ export default function OrgSettingsPage() {
             </Select>
             <div style={{ fontSize: 11, color: 'var(--c-text-faint)', marginTop: 4 }}>ถูกเลือกไว้ล่วงหน้าในขั้นตอนที่ 4 ของ Planning Wizard</div>
           </Field>
+
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--c-text-muted)', marginBottom: 10 }}>ต้นทุน/เวลาต่อจุดส่งเพิ่ม (งานหลายจุดส่ง)</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <Field label="เวลาเฉลี่ยต่อจุดส่งเพิ่ม (นาที)">
+                <Input
+                  type="number"
+                  value={settings.avg_stop_time_minutes}
+                  onChange={(e) => setSettings({ ...settings, avg_stop_time_minutes: Number(e.target.value) })}
+                />
+              </Field>
+              <Field label="ต้นทุนเฉลี่ยต่อจุดส่งเพิ่ม (บาท)">
+                <Input type="number" value={settings.avg_stop_cost} onChange={(e) => setSettings({ ...settings, avg_stop_cost: Number(e.target.value) })} />
+              </Field>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--c-text-faint)', marginTop: 4 }}>
+              เมื่องานขนส่งมีจำนวนจุดส่งมากกว่า 1 จุด ระบบจะบวกเวลา/ต้นทุนต่อจุดที่เกินเข้าไปในการคำนวณ AHP อัตโนมัติ
+            </div>
+          </div>
 
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--c-text-muted)', marginBottom: 10 }}>การแจ้งเตือน</div>

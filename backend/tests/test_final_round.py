@@ -43,7 +43,13 @@ def test_organization_settings_roundtrip_and_effect_on_notification(client):
     res = client.put(
         f"/api/tdss/organizations/{org_id}/settings",
         headers=headers,
-        json={"default_route_mode": "manual", "notify_on_recommendation_completed": False, "notify_on_job_approved": True},
+        json={
+            "default_route_mode": "manual",
+            "notify_on_recommendation_completed": False,
+            "notify_on_job_approved": True,
+            "avg_stop_time_minutes": 30,
+            "avg_stop_cost": 100,
+        },
     )
     assert res.status_code == 200, res.text
     assert res.json()["notify_on_recommendation_completed"] is False

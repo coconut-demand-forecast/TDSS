@@ -31,6 +31,7 @@ interface DraftState {
   shipment_volume_m3: string;
   required_delivery_datetime: string;
   special_requirements: string;
+  number_of_stops: string;
   routeIds: number[];
   vehicleIds: number[];
   profileId: number | null;
@@ -59,6 +60,7 @@ export default function PlanningWizardPage() {
     shipment_volume_m3: '',
     required_delivery_datetime: '',
     special_requirements: '',
+    number_of_stops: '1',
     routeIds: [],
     vehicleIds: [],
     profileId: null,
@@ -122,6 +124,7 @@ export default function PlanningWizardPage() {
             shipment_volume_m3: j.shipment_volume_m3 ? String(j.shipment_volume_m3) : '',
             required_delivery_datetime: j.required_delivery_datetime ? j.required_delivery_datetime.slice(0, 16) : '',
             special_requirements: j.special_requirements || '',
+            number_of_stops: String(j.number_of_stops || 1),
             profileId: defaultStillActive ? defaultProfileId! : d.profileId,
           }));
         }
@@ -170,6 +173,7 @@ export default function PlanningWizardPage() {
         destination: draft.destination,
         required_delivery_datetime: draft.required_delivery_datetime ? new Date(draft.required_delivery_datetime).toISOString() : undefined,
         special_requirements: draft.special_requirements || undefined,
+        number_of_stops: Number(draft.number_of_stops || 1),
       });
       return true;
     } catch {
@@ -337,6 +341,17 @@ export default function PlanningWizardPage() {
             </Field>
             <Field label="กำหนดส่งมอบ">
               <Input type="datetime-local" value={draft.required_delivery_datetime} onChange={(e) => setDraft({ ...draft, required_delivery_datetime: e.target.value })} />
+            </Field>
+            <Field label="จำนวนจุดส่งทั้งหมด">
+              <Input
+                type="number"
+                min={1}
+                value={draft.number_of_stops}
+                onChange={(e) => setDraft({ ...draft, number_of_stops: e.target.value })}
+              />
+              <div style={{ fontSize: 11, color: 'var(--c-text-faint)', marginTop: 4 }}>
+                นับรวมปลายทางหลัก — ค่าเริ่มต้น 1 คือส่งจุดเดียวไม่มีจุดแวะเพิ่ม จุดที่เกิน 1 จะถูกบวกเวลา/ต้นทุนต่อจุดเข้าไปในการคำนวณคำแนะนำ
+              </div>
             </Field>
             <div style={{ gridColumn: '1 / -1' }}>
               <Field label="ความต้องการพิเศษ">
@@ -589,6 +604,7 @@ export default function PlanningWizardPage() {
             <Row label="เส้นทาง → ปลายทาง" value={`${draft.origin} → ${draft.destination}`} />
             <Row label="น้ำหนัก / ปริมาตร" value={`${draft.shipment_weight_kg} กก. / ${draft.shipment_volume_m3} ลบ.ม.`} />
             {items.length > 0 && <Row label="จำนวนรายการสินค้า" value={`${itemsSummary.skuCount} SKU / ${itemsSummary.totalQuantity.toLocaleString()} หน่วย`} />}
+            <Row label="จำนวนจุดส่ง" value={`${draft.number_of_stops} จุด`} />
             <Row label="จำนวนเส้นทางที่เลือก" value={`${draft.routeIds.length} เส้นทาง`} />
             <Row label="จำนวนยานพาหนะที่เลือก" value={`${draft.vehicleIds.length} คัน`} />
             <Row label="โปรไฟล์การตัดสินใจ" value={selectedProfile?.name ?? '-'} />

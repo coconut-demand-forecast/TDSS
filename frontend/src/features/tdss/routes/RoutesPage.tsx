@@ -35,6 +35,9 @@ export default function RoutesPage() {
   const [saving, setSaving] = useState(false);
   const [defaultMode, setDefaultMode] = useState('manual');
   const [formMode, setFormMode] = useState('manual');
+  const [deleteTarget, setDeleteTarget] = useState<Route | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const membership = user?.memberships.find((m) => m.organization_id === currentOrgId);
   const canWrite = user?.is_system_owner || membership?.role === 'org_admin' || membership?.role === 'planner';
@@ -144,6 +147,23 @@ export default function RoutesPage() {
     }
   };
 
+  const confirmDelete = async () => {
+    if (!currentOrgId || !deleteTarget) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await routesApi.remove(currentOrgId, deleteTarget.id);
+      showSuccess('ลบเส้นทางแล้ว');
+      setDeleteTarget(null);
+      await load();
+    } catch (e: unknown) {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setDeleteError(typeof detail === 'string' ? detail : 'ลบไม่สำเร็จ');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <OrgWorkspaceLayout title={t('nav.routes')}>
       <PageHeader
@@ -206,6 +226,9 @@ export default function RoutesPage() {
                         </Button>
                         <Button size="sm" variant={r.status === 'active' ? 'danger' : 'secondary'} onClick={() => toggleStatus(r)}>
                           {r.status === 'active' ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}
+                        </Button>
+                        <Button size="sm" variant="danger" onClick={() => { setDeleteTarget(r); setDeleteError(null); }}>
+                          ลบ
                         </Button>
                       </div>
                     </Td>
@@ -283,6 +306,27 @@ export default function RoutesPage() {
             </Button>
             <Button onClick={submit} loading={saving}>
               บันทึก
+            </Button>
+          </div>
+        </Dialog>
+      )}
+
+      {deleteTarget && (
+        <Dialog title="ยืนยันการลบเส้นทาง" onClose={() => setDeleteTarget(null)}>
+          <div style={{ fontSize: 13, marginBottom: 14 }}>
+            ต้องการลบเส้นทาง <strong>{deleteTarget.route_name}</strong> ใช่หรือไม่? การลบไม่สามารถย้อนกลับได้
+          </div>
+          {deleteError && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', borderRadius: 8, padding: '10px 12px', fontSize: 12.5, marginBottom: 14 }}>
+              {deleteError}
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+              ยกเลิก
+            </Button>
+            <Button variant="danger" onClick={confirmDelete} loading={deleting}>
+              ยืนยันการลบ
             </Button>
           </div>
         </Dialog>

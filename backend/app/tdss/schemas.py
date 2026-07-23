@@ -109,6 +109,8 @@ class OrganizationSettingsOut(BaseModel):
     default_decision_profile_id: int | None
     notify_on_recommendation_completed: bool
     notify_on_job_approved: bool
+    avg_stop_time_minutes: float
+    avg_stop_cost: float
 
 
 class OrganizationSettingsUpdateRequest(BaseModel):
@@ -116,6 +118,8 @@ class OrganizationSettingsUpdateRequest(BaseModel):
     default_decision_profile_id: int | None = None
     notify_on_recommendation_completed: bool
     notify_on_job_approved: bool
+    avg_stop_time_minutes: float = Field(ge=0)
+    avg_stop_cost: float = Field(ge=0)
 
 
 class OrgUserOut(BaseModel):

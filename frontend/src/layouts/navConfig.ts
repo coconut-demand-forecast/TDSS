@@ -11,6 +11,7 @@ export const ORG_NAV: NavItem[] = [
   { key: 'vehicles', label: 'ยานพาหนะ', to: '/tdss/vehicles', roles: ['org_admin', 'planner', 'viewer'] },
   { key: 'products', label: 'ข้อมูลสินค้า (Product Master)', to: '/tdss/products', roles: ['org_admin', 'planner', 'viewer'] },
   { key: 'routes', label: 'เส้นทาง', to: '/tdss/routes', roles: ['org_admin', 'planner', 'viewer'] },
+  { key: 'route-optimization', label: 'เพิ่มประสิทธิภาพเส้นทาง (VRP)', to: '/tdss/route-optimization', roles: ['org_admin', 'planner', 'viewer'] },
   { key: 'decision-profiles', label: 'โปรไฟล์การตัดสินใจ (AHP)', to: '/tdss/decision-profiles', roles: ['org_admin', 'planner', 'viewer'] },
   { key: 'reports', label: 'รายงาน', to: '/tdss/reports', roles: ['org_admin', 'planner', 'viewer'] },
   { key: 'ai-insights', label: 'ข้อมูลเชิงลึก AI', to: '/tdss/ai-insights', roles: ['org_admin', 'planner'] },

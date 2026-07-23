@@ -67,6 +67,7 @@ export default function JobDetailPage() {
         shipment_volume_m3: items.length > 0 ? undefined : form.shipment_volume_m3 ? Number(form.shipment_volume_m3) : undefined,
         priority: form.priority,
         special_requirements: form.special_requirements || undefined,
+        number_of_stops: form.number_of_stops ? Number(form.number_of_stops) : undefined,
       });
       showSuccess('บันทึกการแก้ไขแล้ว');
       setEditing(false);
@@ -200,6 +201,9 @@ export default function JobDetailPage() {
                   <option value="urgent">เร่งด่วน</option>
                 </Select>
               </Field>
+              <Field label="จำนวนจุดส่ง">
+                <Input type="number" min={1} value={form.number_of_stops ?? 1} onChange={(e) => setForm({ ...form, number_of_stops: Number(e.target.value) })} />
+              </Field>
               <div style={{ gridColumn: '1 / -1' }}>
                 <Field label="ความต้องการพิเศษ">
                   <TextArea value={form.special_requirements ?? ''} onChange={(e) => setForm({ ...form, special_requirements: e.target.value })} />
@@ -221,6 +225,7 @@ export default function JobDetailPage() {
               <Row label="น้ำหนัก" value={job.shipment_weight_kg ? `${job.shipment_weight_kg.toLocaleString()} กก.` : '-'} />
               <Row label="ปริมาตร" value={job.shipment_volume_m3 ? `${job.shipment_volume_m3.toLocaleString()} ลบ.ม.` : '-'} />
               <Row label="ความสำคัญ" value={job.priority} />
+              <Row label="จำนวนจุดส่ง" value={`${job.number_of_stops} จุด`} />
               <Row label="ความต้องการพิเศษ" value={job.special_requirements || '-'} />
 
               {items.length > 0 && (

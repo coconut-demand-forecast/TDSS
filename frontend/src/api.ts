@@ -311,6 +311,8 @@ export interface OrganizationSettings {
   default_decision_profile_id: number | null;
   notify_on_recommendation_completed: boolean;
   notify_on_job_approved: boolean;
+  avg_stop_time_minutes: number;
+  avg_stop_cost: number;
 }
 
 export interface OrganizationUsageRow {

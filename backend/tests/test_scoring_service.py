@@ -37,3 +37,40 @@ def test_weighted_score_sums_to_expected():
     weighted, total = weighted_score(normalized, weights)
     expected_total = sum(normalized[c] * weights[c] for c in normalized)
     assert abs(total - expected_total) < 1e-9
+
+
+def test_single_stop_job_unaffected_by_multi_drop_settings():
+    """number_of_stops defaults to 1 (no extra stops) — every job created
+    before this feature existed must score identically, even when the org
+    has non-zero avg_stop_time_minutes/avg_stop_cost configured."""
+    job = make_job(number_of_stops=1)
+    vehicle = make_vehicle(cost_per_km=15, fixed_cost=500)
+    route = make_route(distance_km=100, toll_cost=50)
+
+    without_settings = raw_values(job, vehicle, route)
+    with_settings = raw_values(job, vehicle, route, avg_stop_time_minutes=30, avg_stop_cost=100)
+    assert with_settings["cost"] == without_settings["cost"]
+    assert with_settings["time"] == without_settings["time"]
+
+
+def test_multi_drop_job_adds_extra_time_and_cost_per_extra_stop():
+    job = make_job(number_of_stops=4)  # 1 main destination + 3 extra stops
+    vehicle = make_vehicle(cost_per_km=15, fixed_cost=500)
+    route = make_route(distance_km=100, toll_cost=50, estimated_duration_minutes=120)
+
+    raw = raw_values(job, vehicle, route, avg_stop_time_minutes=30, avg_stop_cost=100)
+    # base cost = 500 (fixed) + 15*100 (flat-rate fuel) + 50 (toll) = 2050; +3 extra stops * 100 = 2350
+    assert raw["cost"] == 2050 + 3 * 100
+    # base time = 120 minutes; +3 extra stops * 30 = 210
+    assert raw["time"] == 120 + 3 * 30
+
+
+def test_zero_stop_settings_means_no_multi_drop_penalty_even_with_many_stops():
+    job = make_job(number_of_stops=5)
+    vehicle = make_vehicle(cost_per_km=15, fixed_cost=500)
+    route = make_route(distance_km=100, toll_cost=50)
+
+    raw = raw_values(job, vehicle, route, avg_stop_time_minutes=0, avg_stop_cost=0)
+    baseline = raw_values(make_job(number_of_stops=1), vehicle, route)
+    assert raw["cost"] == baseline["cost"]
+    assert raw["time"] == baseline["time"]

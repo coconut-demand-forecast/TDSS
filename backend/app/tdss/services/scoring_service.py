@@ -8,9 +8,20 @@ Six criteria (app.tdss.models.CRITERIA):
 Formulas (deterministic, no randomness, documented so a thesis reader can
 verify them by hand):
 
-  cost  = vehicle.fixed_cost + fuel_cost_component + route.toll_cost
-  time  = route.estimated_duration_minutes
+  cost  = vehicle.fixed_cost + fuel_cost_component + route.toll_cost + extra_stop_cost
+  time  = route.estimated_duration_minutes + extra_stop_time
   co2   = fuel_co2_component
+
+extra_stop_cost / extra_stop_time (multi-drop jobs):
+  extra_stops      = max(0, job.number_of_stops - 1)   — stops beyond the
+                     single main destination already priced into the route
+  extra_stop_time  = extra_stops * organization.avg_stop_time_minutes
+  extra_stop_cost  = extra_stops * organization.avg_stop_cost
+  Both org-level values are admin-adjustable (Org Settings) rather than a
+  hardcoded constant — per-stop handling time/cost varies too much across
+  business types for one fixed number to be defensible. A job with
+  number_of_stops = 1 (the default) adds nothing, so this is fully
+  backward compatible with every job created before this feature existed.
   utilization  = average(weight_utilization, volume_utilization)
   reliability  = risk-level lookup {low: 0.95, medium: 0.80, high: 0.60}
   suitability  = average(route_suitability, vehicle_suitability), where:
@@ -77,7 +88,7 @@ def fuel_based_transport_calc(vehicle: Vehicle, distance_km: float) -> dict | No
     }
 
 
-def raw_values(job: TransportJob, vehicle: Vehicle, route: Route) -> dict:
+def raw_values(job: TransportJob, vehicle: Vehicle, route: Route, avg_stop_time_minutes: float = 0.0, avg_stop_cost: float = 0.0) -> dict:
     weight_utilization = (job.shipment_weight_kg or 0) / vehicle.capacity_weight_kg if vehicle.capacity_weight_kg else 0
     volume_utilization = (job.shipment_volume_m3 or 0) / vehicle.capacity_volume_m3 if vehicle.capacity_volume_m3 else 0
     utilization = (weight_utilization + volume_utilization) / 2
@@ -90,8 +101,12 @@ def raw_values(job: TransportJob, vehicle: Vehicle, route: Route) -> dict:
         fuel_cost_component = vehicle.cost_per_km * route.distance_km
         co2 = route.distance_km * vehicle.co2_factor
 
-    total_transport_cost = vehicle.fixed_cost + fuel_cost_component + route.toll_cost
-    time = float(route.estimated_duration_minutes)
+    extra_stops = max(0, (job.number_of_stops or 1) - 1)
+    extra_stop_time = extra_stops * avg_stop_time_minutes
+    extra_stop_cost = extra_stops * avg_stop_cost
+
+    total_transport_cost = vehicle.fixed_cost + fuel_cost_component + route.toll_cost + extra_stop_cost
+    time = float(route.estimated_duration_minutes) + extra_stop_time
     reliability = _RISK_RELIABILITY.get(route.route_risk_level, 0.8)
 
     route_suitability = _RISK_SUITABILITY.get(route.route_risk_level, 0.75)
